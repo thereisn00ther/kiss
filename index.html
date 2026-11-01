@@ -1,0 +1,2149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone 16 Pro Web Simulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Pretendard Font -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background-color: #05070c;
+            background: radial-gradient(circle at 50% 25%, #181d29 0%, #030407 100%);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Realistic iPhone 16 Pro Titanium chassis with outer ring highlights */
+        .iphone-frame {
+            box-shadow: 
+                0 40px 120px -10px rgba(0, 0, 0, 0.98),
+                0 0 0 3px #18181b,
+                0 0 0 9px #27272a,
+                0 0 0 12px #3f3f46,
+                0 0 0 13px #18181b,
+                inset 0 0 5px 2px rgba(255, 255, 255, 0.1);
+        }
+        /* Lock screen & Home screen custom wallpaper */
+        .lockscreen-bg {
+            background-color: #0b0f19;
+            background-image: url('https://i.imgur.com/tdODgbY.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .home-wallpaper-bg {
+            background-color: #0b0f19;
+            background-image: url('https://i.imgur.com/tdODgbY.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        .insta-story-ring {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+    </style>
+</head>
+<body class="relative flex items-center justify-center p-2 sm:p-4 select-none">
+
+    <!-- Toast Notification (iOS banner) -->
+    <div id="toast-modal" class="fixed top-8 left-1/2 -translate-x-1/2 z-[99999] bg-neutral-900/95 border border-white/20 text-white px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-xl transform -translate-y-28 opacity-0 transition-all duration-300 flex items-center space-x-3 pointer-events-none">
+        <i class="fa-solid fa-circle-info text-sky-400 text-lg"></i>
+        <span id="toast-msg" class="text-sm font-medium">알림</span>
+    </div>
+
+    <!-- Phone Simulator Shell -->
+    <div class="relative z-10 flex flex-col items-center">
+        <!-- iPhone 16 Pro Frame -->
+        <div id="iphone" class="iphone-frame relative w-[393px] h-[852px] max-h-[96vh] aspect-[393/852] bg-black rounded-[54px] overflow-visible flex flex-col justify-between">
+            
+            <!-- Physical Left Side Buttons -->
+            <button onclick="triggerActionButton()" title="동작 버튼" class="absolute -left-[14px] top-[115px] w-[4px] h-[26px] bg-[#3a3a3c] hover:bg-[#48484a] rounded-l-sm border-l border-y border-neutral-600 focus:outline-none transition-all cursor-pointer z-50"></button>
+            <button onclick="adjustVolume(1)" title="음량 올리기" class="absolute -left-[14px] top-[165px] w-[4px] h-[50px] bg-[#3a3a3c] hover:bg-[#48484a] rounded-l-sm border-l border-y border-neutral-600 focus:outline-none transition-all cursor-pointer z-50"></button>
+            <button onclick="adjustVolume(-1)" title="음량 내리기" class="absolute -left-[14px] top-[228px] w-[4px] h-[50px] bg-[#3a3a3c] hover:bg-[#48484a] rounded-l-sm border-l border-y border-neutral-600 focus:outline-none transition-all cursor-pointer z-50"></button>
+
+            <!-- Physical Right Side Power Button -->
+            <button onclick="togglePowerButton()" title="전원/잠금 버튼" class="absolute -right-[14px] top-[180px] w-[4px] h-[75px] bg-[#3a3a3c] hover:bg-[#48484a] rounded-r-sm border-r border-y border-neutral-600 focus:outline-none transition-all cursor-pointer z-50"></button>
+
+            <!-- iOS Volume HUD Overlay -->
+            <div id="volume-hud" class="absolute left-2.5 top-[170px] z-[9990] w-1.5 h-20 bg-neutral-800/80 backdrop-blur-md rounded-full overflow-hidden opacity-0 transition-opacity duration-200 pointer-events-none flex flex-col justify-end">
+                <div id="volume-level" class="w-full bg-white transition-all duration-100" style="height: 65%;"></div>
+            </div>
+
+            <!-- Screen Container with Rounded Corners -->
+            <div id="screen" class="relative w-full h-full rounded-[50px] overflow-hidden flex flex-col justify-between text-white bg-black">
+                
+                <!-- Status Bar -->
+                <div id="status-bar" class="absolute top-0 left-0 right-0 z-[9000] px-7 pt-3 flex justify-between items-center text-xs font-semibold tracking-tight text-white drop-shadow pointer-events-none transition-colors duration-200">
+                    <span id="clock" class="text-[14.5px] font-bold tracking-normal">11:22</span>
+                    
+                    <!-- Dynamic Island: Static camera pill cutout -->
+                    <div id="dynamic-island" class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-2.5 bg-black h-[32px] w-[122px] rounded-full flex items-center justify-between px-3 shadow-md border border-neutral-900">
+                        <div class="w-2.5 h-2.5 rounded-full bg-[#151518] border border-neutral-800 flex items-center justify-center flex-shrink-0">
+                            <div class="w-1 h-1 rounded-full bg-blue-900/80"></div>
+                        </div>
+                        <div class="flex-1"></div>
+                        <div class="w-3 h-3 rounded-full bg-[#0d0d10] flex-shrink-0"></div>
+                    </div>
+
+                    <!-- Right Status Bar Icons -->
+                    <div class="flex items-center space-x-1.5 text-xs">
+                        <i class="fa-solid fa-signal text-[11px]"></i>
+                        <i class="fa-solid fa-wifi text-[11px]"></i>
+                        <div class="bg-current/25 px-1.5 py-0.5 rounded-[5px] text-[9.5px] font-extrabold leading-none border border-current/40">100</div>
+                    </div>
+                </div>
+
+                <!-- 1. Lock Screen -->
+                <div id="lock-screen" class="absolute inset-0 z-[4000] flex flex-col justify-between p-6 pt-16 pb-10 cursor-pointer lockscreen-bg transition-opacity duration-300"
+                     onclick="openPasscodeScreen()"
+                     ontouchstart="handleTouchStart(event)"
+                     ontouchend="handleTouchEnd(event)">
+                    
+                    <div class="flex flex-col items-center mt-12 text-white drop-shadow-md pointer-events-none">
+                        <div class="flex items-center space-x-2 text-white/90 mb-1">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span id="lock-date" class="text-sm font-semibold tracking-wide">6월 22일 월요일</span>
+                        </div>
+                        <h1 id="lock-clock" class="text-[86px] font-light tracking-tighter leading-none mt-1">11:22</h1>
+                    </div>
+
+                    <div class="flex-1"></div>
+
+                    <!-- Bottom Flashlight & Camera Shortcuts & Swipe Prompt -->
+                    <div class="flex flex-col items-center pb-2 pointer-events-none">
+                        <div class="w-full flex justify-between px-4 mb-4 pointer-events-auto">
+                            <button onclick="event.stopPropagation(); showToast('🔦 손전등이 켜졌습니다.')" class="w-12 h-12 rounded-full bg-neutral-900/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-lg active:scale-90 transition shadow-lg">
+                                <i class="fa-solid fa-flashlight"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openApp('photos')" class="w-12 h-12 rounded-full bg-neutral-900/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-lg active:scale-90 transition shadow-lg">
+                                <i class="fa-solid fa-camera"></i>
+                            </button>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-neutral-800/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white mb-2 shadow-lg animate-bounce">
+                            <i class="fa-solid fa-chevron-up text-xs"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-white/90 tracking-wide drop-shadow">화면을 클릭하여 암호 입력</span>
+                    </div>
+                </div>
+
+                <!-- 2. Passcode Screen -->
+                <div id="passcode-screen" class="absolute inset-0 z-[5000] hidden flex-col justify-between p-6 pt-20 pb-10 lockscreen-bg">
+                    <div class="pt-6 flex flex-col items-center">
+                        <h2 class="text-white text-lg font-bold mb-5 tracking-wide drop-shadow">암호 입력</h2>
+                        <div id="passcode-dots" class="flex space-x-4 mb-4">
+                            <div class="w-3.5 h-3.5 rounded-full border-2 border-white bg-transparent transition-all duration-150"></div>
+                            <div class="w-3.5 h-3.5 rounded-full border-2 border-white bg-transparent transition-all duration-150"></div>
+                            <div class="w-3.5 h-3.5 rounded-full border-2 border-white bg-transparent transition-all duration-150"></div>
+                            <div class="w-3.5 h-3.5 rounded-full border-2 border-white bg-transparent transition-all duration-150"></div>
+                            <div class="w-3.5 h-3.5 rounded-full border-2 border-white bg-transparent transition-all duration-150"></div>
+                            <div class="w-3.5 h-3.5 rounded-full border-2 border-white bg-transparent transition-all duration-150"></div>
+                        </div>
+                    </div>
+
+                    <!-- Keypad -->
+                    <div class="max-w-[280px] mx-auto w-full grid grid-cols-3 gap-y-3.5 gap-x-5 px-2 my-auto">
+                        <button type="button" onclick="pressPin('1')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white">1</span>
+                        </button>
+                        <button type="button" onclick="pressPin('2')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">2</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">ABC</span>
+                        </button>
+                        <button type="button" onclick="pressPin('3')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">3</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">DEF</span>
+                        </button>
+
+                        <button type="button" onclick="pressPin('4')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">4</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">GHI</span>
+                        </button>
+                        <button type="button" onclick="pressPin('5')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">5</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">JKL</span>
+                        </button>
+                        <button type="button" onclick="pressPin('6')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">6</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">MNO</span>
+                        </button>
+
+                        <button type="button" onclick="pressPin('7')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">7</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">PQRS</span>
+                        </button>
+                        <button type="button" onclick="pressPin('8')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">8</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">TUV</span>
+                        </button>
+                        <button type="button" onclick="pressPin('9')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white leading-none">9</span>
+                            <span class="text-[9px] font-bold text-white/80 tracking-widest mt-0.5">WXYZ</span>
+                        </button>
+
+                        <div></div>
+                        <button type="button" onclick="pressPin('0')" class="w-[72px] h-[72px] rounded-full bg-white/25 hover:bg-white/40 active:bg-white/60 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition shadow-md mx-auto border border-white/20 outline-none">
+                            <span class="text-3xl font-light text-white">0</span>
+                        </button>
+                        <button type="button" onclick="deletePin()" class="flex items-center justify-center cursor-pointer text-white hover:opacity-80 text-sm font-bold bg-transparent border-0 outline-none">
+                            지우기
+                        </button>
+                    </div>
+
+                    <div class="px-8 pb-2 flex justify-between items-center text-sm font-bold text-white">
+                        <button type="button" class="cursor-pointer hover:opacity-80" onclick="showToast('🚨 긴급 상황 화면입니다.')">긴급 상황</button>
+                        <button type="button" class="cursor-pointer hover:opacity-80" onclick="cancelPasscode()">취소</button>
+                    </div>
+                </div>
+
+                <!-- 3. Home Screen (Custom Wallpaper, Notes app removed, KakaoTalk has NO '14' badge) -->
+                <div id="home-screen" class="relative z-[1000] flex-1 hidden flex-col justify-between px-5 pt-16 pb-0 overflow-y-auto no-scrollbar home-wallpaper-bg">
+                    <div>
+                        <!-- Widgets -->
+                        <div class="grid grid-cols-1 gap-3 mb-6 mt-2">
+                            <div onclick="openApp('everytime')" class="bg-black/40 hover:bg-black/50 backdrop-blur-xl border border-white/20 p-4 rounded-3xl shadow-xl flex flex-col justify-between cursor-pointer transition transform active:scale-98">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-[11px] font-semibold text-white/80">오늘의 시간표</p>
+                                        <p class="text-[13px] font-extrabold text-white mt-0.5">연기실습 5 / 움직임 V</p>
+                                    </div>
+                                    <div class="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm overflow-hidden p-0.5">
+                                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                                            <path d="M 20 50 A 30 30 0 0 0 80 50" fill="none" stroke="#262626" stroke-width="14"/>
+                                            <circle cx="75" cy="32" r="10.5" fill="#262626"/>
+                                            <path d="M 42 44 L 46 57 A 4 4 0 0 0 54 57 L 58 44 Z" fill="#e0140a"/>
+                                            <circle cx="50" cy="43" r="8" fill="#ff1e14"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-white/90 font-medium mt-3 flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-location-dot text-[10px] text-red-400"></i>
+                                    <span>연극원 영상원(본관) L201</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- App Grid: Everytime, Photos, KakaoTalk, Instagram (Notes app deleted) -->
+                        <div class="grid grid-cols-4 gap-y-5 gap-x-3">
+                            <!-- 1) Everytime -->
+                            <div onclick="openApp('everytime')" class="flex flex-col items-center cursor-pointer group">
+                                <div class="w-[60px] h-[60px] bg-white rounded-[15px] flex items-center justify-center shadow-lg transform transition group-hover:scale-105 active:scale-95 overflow-hidden p-1 border border-neutral-300">
+                                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                                        <path d="M 20 50 A 30 30 0 0 0 80 50" fill="none" stroke="#262626" stroke-width="14"/>
+                                        <circle cx="75" cy="32" r="10.5" fill="#262626"/>
+                                        <path d="M 42 44 L 46 57 A 4 4 0 0 0 54 57 L 58 44 Z" fill="#e0140a"/>
+                                        <circle cx="50" cy="43" r="8" fill="#ff1e14"/>
+                                    </svg>
+                                </div>
+                                <span class="text-[11px] font-semibold mt-1.5 drop-shadow text-white">에브리타임</span>
+                            </div>
+
+                            <!-- 2) Photos (Gallery) -->
+                            <div onclick="openApp('photos')" class="flex flex-col items-center cursor-pointer group">
+                                <div class="w-[60px] h-[60px] bg-white rounded-[15px] flex items-center justify-center shadow-lg transform transition group-hover:scale-105 active:scale-95 overflow-hidden border border-neutral-800">
+                                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                                        <rect width="100" height="100" fill="#ffffff"/>
+                                        <g style="mix-blend-mode: multiply;">
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#ffac2f"/>
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#b7d332" transform="rotate(45 50 50)"/>
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#6cc24a" transform="rotate(90 50 50)"/>
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#00a4bd" transform="rotate(135 50 50)"/>
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#63b5e5" transform="rotate(180 50 50)"/>
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#a864c9" transform="rotate(225 50 50)"/>
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#f382ab" transform="rotate(270 50 50)"/>
+                                            <rect x="37.5" y="9" width="25" height="39" rx="12.5" fill="#fb5047" transform="rotate(315 50 50)"/>
+                                        </g>
+                                    </svg>
+                                </div>
+                                <span class="text-[11px] font-semibold mt-1.5 drop-shadow text-white">갤러리</span>
+                            </div>
+
+                            <!-- 3) KakaoTalk (Notification badge removed) -->
+                            <div onclick="openApp('kakaotalk')" class="flex flex-col items-center cursor-pointer group relative">
+                                <div class="w-[60px] h-[60px] bg-[#fee500] rounded-[15px] flex items-center justify-center text-[#3c1e1e] shadow-lg transform transition group-hover:scale-105 active:scale-95 border border-neutral-800">
+                                    <i class="fa-solid fa-comment text-2xl"></i>
+                                </div>
+                                <span class="text-[11px] font-semibold mt-1.5 drop-shadow text-white">카카오톡</span>
+                            </div>
+
+                            <!-- 4) Instagram -->
+                            <div onclick="openApp('instagram')" class="flex flex-col items-center cursor-pointer group">
+                                <div class="w-[60px] h-[60px] bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#962fbf] rounded-[15px] flex items-center justify-center text-white shadow-lg transform transition group-hover:scale-105 active:scale-95 border border-pink-400">
+                                    <i class="fa-brands fa-instagram text-3xl"></i>
+                                </div>
+                                <span class="text-[11px] font-semibold mt-1.5 drop-shadow text-white">인스타그램</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dock (Messages is non-clickable, KakaoTalk has NO '14' badge) -->
+                    <div id="home-dock" class="px-3 py-2.5 bg-white/20 backdrop-blur-2xl mb-2 rounded-[30px] border border-white/20 flex justify-around items-center shadow-xl">
+                        <!-- Phone App -->
+                        <div onclick="openApp('phone')" class="w-[52px] h-[52px] bg-gradient-to-b from-[#34c759] to-[#30b050] rounded-2xl flex items-center justify-center text-white shadow cursor-pointer hover:scale-105 active:scale-95 transition">
+                            <i class="fa-solid fa-phone text-xl"></i>
+                        </div>
+                        
+                        <!-- Messages App: Completely disabled / non-clickable as requested -->
+                        <div class="w-[52px] h-[52px] bg-gradient-to-b from-[#34c759] to-[#28cd41] rounded-2xl flex items-center justify-center text-white shadow p-1.5 opacity-90 pointer-events-none cursor-default">
+                            <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+                                <path d="M 50 12 C 27.9 12 10 27.8 10 47.5 C 10 58.1 15.1 67.7 23 74.2 L 18 90 L 35.2 81.3 C 39.8 82.6 44.8 83.3 50 83.3 C 72.1 83.3 90 67.5 90 47.5 C 90 27.8 72.1 12 50 12 Z" fill="#ffffff"/>
+                            </svg>
+                        </div>
+
+                        <!-- KakaoTalk in Dock (Notification badge removed) -->
+                        <div onclick="openApp('kakaotalk')" class="relative w-[52px] h-[52px] bg-[#fee500] rounded-2xl flex items-center justify-center text-[#3c1e1e] shadow cursor-pointer hover:scale-105 active:scale-95 transition">
+                            <i class="fa-solid fa-comment text-xl"></i>
+                        </div>
+
+                        <!-- Safari App -->
+                        <div onclick="openApp('safari')" class="w-[52px] h-[52px] rounded-2xl flex items-center justify-center shadow cursor-pointer hover:scale-105 active:scale-95 transition overflow-hidden bg-white">
+                            <img src="https://i.imgur.com/TgqPQti.png" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/1890ff/ffffff?text=Safari'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Application Screen Overlay Window -->
+                <div id="app-window" class="absolute inset-0 z-[6000] hidden flex-col bg-white overflow-hidden transition-all duration-200"></div>
+
+                <!-- Home Indicator Bar -->
+                <div id="home-indicator" class="relative z-[9500] pb-2 pt-1 flex justify-center items-center cursor-pointer bg-transparent transition-colors duration-200" onclick="handleHomeBarClick()">
+                    <div id="home-bar-pill" class="w-32 h-1.5 bg-white/90 rounded-full hover:opacity-100 transition shadow"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic (Silent mode: no sound effects) -->
+    <script>
+        let phoneState = 'lock'; // 'lock', 'passcode', 'home', 'app'
+        let enteredPin = "";
+        const CORRECT_PIN = "900210";
+        let everytimeDetailOpen = false;
+
+        // Live Clock Synced
+        function updateClock() {
+            const timeStr = "11:22";
+            const clockEl = document.getElementById('clock');
+            const lockClockEl = document.getElementById('lock-clock');
+            if (clockEl) clockEl.innerText = timeStr;
+            if (lockClockEl) lockClockEl.innerText = timeStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Toast Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast-modal');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = msg;
+            toast.style.transform = 'translate(-50%, 0)';
+            toast.style.opacity = '1';
+            if (window.toastTimeout) clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => {
+                toast.style.transform = 'translate(-50%, -96px)';
+                toast.style.opacity = '0';
+            }, 2200);
+        }
+
+        // Status Bar Dark/Light Theme Switch
+        function setStatusBarTheme(theme) {
+            const sb = document.getElementById('status-bar');
+            const pill = document.getElementById('home-bar-pill');
+            if (theme === 'dark') {
+                sb.classList.remove('text-white', 'drop-shadow');
+                sb.classList.add('text-black');
+                if (pill) {
+                    pill.classList.remove('bg-white/90');
+                    pill.classList.add('bg-black/80');
+                }
+            } else {
+                sb.classList.remove('text-black');
+                sb.classList.add('text-white', 'drop-shadow');
+                if (pill) {
+                    pill.classList.remove('bg-black/80');
+                    pill.classList.add('bg-white/90');
+                }
+            }
+        }
+
+        // Volume HUD
+        let currentVolume = 65;
+        function adjustVolume(delta) {
+            currentVolume = Math.min(100, Math.max(0, currentVolume + delta * 10));
+            const hud = document.getElementById('volume-hud');
+            const level = document.getElementById('volume-level');
+            if (level) level.style.height = `${currentVolume}%`;
+            if (hud) {
+                hud.style.opacity = '1';
+                if (window.volHudTimeout) clearTimeout(window.volHudTimeout);
+                window.volHudTimeout = setTimeout(() => {
+                    hud.style.opacity = '0';
+                }, 1400);
+            }
+        }
+
+        function triggerActionButton() {
+            showToast('⚡ 동작 버튼이 눌렸습니다.');
+        }
+
+        function togglePowerButton() {
+            if (phoneState === 'lock') {
+                showToast('화면 잠금 상태입니다.');
+            } else {
+                goHome();
+                lockPhone();
+            }
+        }
+
+        function lockPhone() {
+            phoneState = 'lock';
+            enteredPin = "";
+            document.getElementById('app-window').style.display = 'none';
+            document.getElementById('passcode-screen').style.display = 'none';
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('lock-screen').style.display = 'flex';
+            setStatusBarTheme('light');
+        }
+
+        // Touch gestures
+        let touchStartY = 0;
+        function handleTouchStart(e) {
+            if (e.touches && e.touches.length > 0) touchStartY = e.touches[0].clientY;
+        }
+        function handleTouchEnd(e) {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                let touchEndY = e.changedTouches[0].clientY;
+                if (touchStartY - touchEndY > 30) openPasscodeScreen();
+            }
+        }
+
+        function openPasscodeScreen() {
+            phoneState = 'passcode';
+            enteredPin = "";
+            updatePinDots();
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('passcode-screen').style.display = 'flex';
+            setStatusBarTheme('light');
+        }
+
+        function cancelPasscode() {
+            phoneState = 'lock';
+            enteredPin = "";
+            updatePinDots();
+            document.getElementById('passcode-screen').style.display = 'none';
+            document.getElementById('lock-screen').style.display = 'flex';
+            setStatusBarTheme('light');
+        }
+
+        function pressPin(digit) {
+            if (phoneState !== 'passcode') return;
+            if (enteredPin.length < 6) {
+                enteredPin += String(digit);
+                updatePinDots();
+                if (enteredPin.length === 6) setTimeout(verifyPin, 120);
+            }
+        }
+
+        function deletePin() {
+            if (phoneState !== 'passcode') return;
+            if (enteredPin.length > 0) {
+                enteredPin = enteredPin.slice(0, -1);
+                updatePinDots();
+            }
+        }
+
+        function updatePinDots() {
+            const dots = document.getElementById('passcode-dots').children;
+            for (let i = 0; i < 6; i++) {
+                dots[i].style.backgroundColor = (i < enteredPin.length) ? '#ffffff' : 'transparent';
+            }
+        }
+
+        function verifyPin() {
+            if (enteredPin === CORRECT_PIN) {
+                phoneState = 'home';
+                document.getElementById('passcode-screen').style.display = 'none';
+                document.getElementById('lock-screen').style.display = 'none';
+                document.getElementById('home-screen').style.display = 'flex';
+                setStatusBarTheme('light');
+            } else {
+                const dotsContainer = document.getElementById('passcode-dots');
+                dotsContainer.classList.add('animate-shake');
+                setTimeout(() => {
+                    dotsContainer.classList.remove('animate-shake');
+                    enteredPin = "";
+                    updatePinDots();
+                }, 400);
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (phoneState === 'lock' && (e.key === 'Enter' || e.key === ' ')) openPasscodeScreen();
+            else if (phoneState === 'passcode') {
+                if (e.key >= '0' && e.key <= '9') pressPin(e.key);
+                else if (e.key === 'Backspace') deletePin();
+                else if (e.key === 'Escape') cancelPasscode();
+            }
+        });
+
+        function handleHomeBarClick() {
+            if (phoneState === 'lock') openPasscodeScreen();
+            else if (phoneState === 'app') goHome();
+        }
+
+        function goHome() {
+            if (phoneState === 'lock' || phoneState === 'passcode') return;
+            phoneState = 'home';
+            if (window.callTimerInterval) clearInterval(window.callTimerInterval);
+            if (window.callDialogTimeout) clearTimeout(window.callDialogTimeout);
+            const appWindow = document.getElementById('app-window');
+            appWindow.style.display = 'none';
+            appWindow.innerHTML = '';
+            document.getElementById('home-screen').style.display = 'flex';
+            setStatusBarTheme('light');
+        }
+
+        function openApp(appName) {
+            phoneState = 'app';
+            const appWindow = document.getElementById('app-window');
+            let content = '';
+
+            switch(appName) {
+                case 'everytime':
+                    setStatusBarTheme('dark');
+                    content = renderEverytimeApp();
+                    break;
+                case 'kakaotalk':
+                    setStatusBarTheme('dark');
+                    content = renderKakaoTalkApp();
+                    break;
+                case 'photos':
+                    setStatusBarTheme('dark');
+                    content = renderPhotosApp();
+                    break;
+                case 'phone':
+                    setStatusBarTheme('dark');
+                    content = renderPhoneApp();
+                    break;
+                case 'safari':
+                    setStatusBarTheme('dark');
+                    content = renderSafariApp();
+                    break;
+                case 'instagram':
+                    setStatusBarTheme('dark');
+                    content = renderInstagramApp();
+                    break;
+            }
+
+            appWindow.innerHTML = content;
+            appWindow.style.display = 'flex';
+        }
+
+        /* ==============================================================
+           2. KAKAOTALK APP
+        ============================================================== */
+        let kakaoCurrentTab = 'friends';
+        let kakaoCurrentView = 'tabs';
+        let kakaoActiveRoom = '권유리 교수님';
+
+        let yuriMessages = [
+            { type: 'date', text: '[20xx년 5월 4일]' },
+            { type: 'in-first', sender: '권유리 교수님', text: '수영아 내일 2시까지 여기로 와', time: '오후 6:07' },
+            { type: 'in-first', sender: '권유리 교수님', text: '[네이버지도]\n일유빌딩\n서울 종로구 삼일대로30길 37 \nhttps://naver.me/GJZSSonX', time: '오후 6:08' },
+            { type: 'in-first', sender: '권유리 교수님', text: '203호', time: '오후 6:08' },
+            { type: 'out', text: '넵 그때 뵙겠습니다', time: '오후 6:10' },
+
+            { type: 'date', text: '[20xx년 5월 5일]' },
+            { type: 'out', text: '선생님 커피 뭐 드세요?', time: '오후 1:22' },
+            { type: 'in-first', sender: '권유리 교수님', text: '너무 늦게봤다 미안', time: '오후 1:40' },
+            { type: 'in-first', sender: '권유리 교수님', text: '그냥 와 수영아', time: '오후 1:40' },
+            { type: 'in-first', sender: '권유리 교수님', text: '고생했어', time: '오후 11:03' },
+            { type: 'in-first', sender: '권유리 교수님', text: '오늘 커피 고마워', time: '오후 11:03' },
+            { type: 'in-first', sender: '권유리 교수님', text: '다음에는 쌤이 사줄게', time: '오후 11:03' },
+            { type: 'in-first', sender: '권유리 교수님', text: '돈 아껴!!', time: '오후 11:04' },
+            { type: 'out', text: '넵...!', time: '오후 11:05' },
+            { type: 'out', text: '내일 뵐게요', time: '오후 11:05' },
+
+            { type: 'date', text: '[20xx년 5월 6일]' },
+            { type: 'out', text: '선생님 저 지하철을 놓쳐서 5분정도 조금 늦을 것 같습니다', time: '오후 1:17' },
+            { type: 'out', text: '죄송합니다 금방 갈게요!!', time: '오후 1:17' },
+            { type: 'in-first', sender: '권유리 교수님', text: '응 조심히 와', time: '오후 1:20' },
+
+            { type: 'date', text: '[20xx년 5월 7일]' },
+            { type: 'out', text: '선생님 늦은 시간에 죄송해요', time: '오전 12:35' },
+            { type: 'out', text: '질문드리고싶은게 있어서요', time: '오전 12:35' },
+            { type: 'out', text: '키스가 존재론적인 이야기라고 하셨잖아요', time: '오전 12:35' },
+            { type: 'out', text: '그럼 저는 상대를 설득할 시도조차 하면 안되는걸까요', time: '오전 12:36' },
+            { type: 'in-first', sender: '권유리 교수님', text: '네가 고독하다고 계속 외치잖아', time: '오전 12:40' },
+            { type: 'in-first', sender: '권유리 교수님', text: '그걸 강제로 설득한다기보단', time: '오전 12:41' },
+            { type: 'in-first', sender: '권유리 교수님', text: '소통이 단절되는걸 역설적으로 아예 주고받는거지', time: '오전 12:41' },
+            { type: 'in-first', sender: '권유리 교수님', text: '말들이 벽이 부딪힐때마다 어떤 생각을 했는데?', time: '오전 12:42' },
+            { type: 'out', text: '글로 정돈이 잘 안돼요...', time: '오전 12:50' },
+            { type: 'in-first', sender: '권유리 교수님', text: 'ㅋㅋㅋㅋㅋ', time: '오전 12:53' },
+            { type: 'in-first', sender: '권유리 교수님', text: '자고 일어나서 더 얘기해', time: '오전 12:53' },
+            { type: 'in-first', sender: '권유리 교수님', text: '연습실에서 보자', time: '오전 12:53' },
+            { type: 'in-first', sender: '권유리 교수님', text: '잘 자', time: '오전 12:54' },
+            { type: 'out', text: '네 감사합니다', time: '오전 12:55' },
+
+            { type: 'date', text: '[20xx년 5월 8일]' },
+            { type: 'out', text: '선생님 플레인 퐁크러쉬 드셔보셨어요?', time: '오후 12:34' },
+            { type: 'in-first', sender: '권유리 교수님', text: '그게 뭐야...', time: '오후 1:30' },
+            { type: 'in-first', sender: '권유리 교수님', text: '이상한데 돈 쓰지마', time: '오후 1:31' },
+            { type: 'out', text: 'ㅋㅋㅋㅋ넵', time: '오후 1:34' },
+            { type: 'in-first', sender: '권유리 교수님', text: '수영아 차에 노트 떨어트리고 갔다', time: '오후 11:48' },
+            { type: 'in-first', sender: '권유리 교수님', text: '빨간색 노트 네거 맞지?', time: '오후 11:48' },
+            { type: 'out', text: '헉!!', time: '오후 11:50' },
+            { type: 'out', text: '제가 찾으러 갈게요!!', time: '오후 11:50' },
+            { type: 'in-first', sender: '권유리 교수님', text: '수업때 줄게', time: '오후 11:52' },
+            { type: 'in-first', sender: '권유리 교수님', text: '잘 들어갔지?', time: '오후 11:53' },
+            { type: 'out', text: '네', time: '오후 11:53' },
+            { type: 'out', text: '태워주셔서 감사합니다', time: '오후 11:53' },
+            { type: 'in-first', sender: '권유리 교수님', text: '다행이네', time: '오후 11:55' },
+            { type: 'in-first', sender: '권유리 교수님', text: '잘 자', time: '오후 11:55' },
+            { type: 'in-first', sender: '권유리 교수님', text: '컨디션 관리 잘 하고', time: '오후 11:55' },
+            { type: 'in-first', sender: '권유리 교수님', text: '^_^', time: '오후 11:56' },
+
+            { type: 'date', text: '[20xx년 5월 28일]' },
+            { type: 'in-first', sender: '권유리 교수님', text: '수영아 오늘 수업 끝나고 연구실로 잠깐 올래', time: '오전 8:38' },
+            { type: 'out', text: '네!', time: '오전 9:22' }
+        ];
+
+        let hasAddedJune22Date = false;
+
+        function switchKakaoTab(tabName) {
+            kakaoCurrentTab = tabName;
+            kakaoCurrentView = 'tabs';
+            document.getElementById('app-window').innerHTML = renderKakaoTalkApp();
+        }
+
+        function openKakaoRoom(roomName) {
+            kakaoActiveRoom = roomName;
+            kakaoCurrentView = 'room';
+            document.getElementById('app-window').innerHTML = renderKakaoTalkApp();
+            // Instantly show the latest message at the very bottom
+            scrollToKakaoBottom();
+            requestAnimationFrame(scrollToKakaoBottom);
+            setTimeout(scrollToKakaoBottom, 40);
+        }
+
+        function closeKakaoRoom() {
+            kakaoCurrentView = 'tabs';
+            kakaoCurrentTab = 'chats';
+            document.getElementById('app-window').innerHTML = renderKakaoTalkApp();
+        }
+
+        function renderKakaoTalkApp() {
+            if (kakaoCurrentView === 'room') return renderKakaoRoomView();
+            let bodyHtml = (kakaoCurrentTab === 'friends') ? renderKakaoFriendsTab() : renderKakaoChatsTab();
+            return `
+                <div class="flex flex-col h-full w-full bg-[#eaeff6] text-neutral-900 select-none pt-11 pb-2">
+                    <div class="flex-1 overflow-y-auto no-scrollbar">${bodyHtml}</div>
+                    
+                    <!-- Screenshot-accurate KakaoTalk bottom navigation bar (No notification badges) -->
+                    <div class="h-[52px] bg-[#eaeff6] border-t border-neutral-200/60 flex justify-around items-center px-4 flex-shrink-0">
+                        <button onclick="switchKakaoTab('friends')" class="w-10 h-full flex items-center justify-center ${kakaoCurrentTab === 'friends' ? 'text-neutral-900' : 'text-neutral-400'}">
+                            <i class="fa-solid fa-chevron-left text-xl"></i>
+                        </button>
+                        <button onclick="switchKakaoTab('chats')" class="w-10 h-full flex items-center justify-center relative ${kakaoCurrentTab === 'chats' ? 'text-neutral-900' : 'text-neutral-400'}">
+                            <i class="fa-solid fa-play text-xl"></i>
+                        </button>
+                        <button class="w-10 h-full flex items-center justify-center text-neutral-400" onclick="showToast('공유')">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-lg"></i>
+                        </button>
+                        <button class="w-10 h-full flex items-center justify-center text-neutral-400 relative" onclick="showToast('소식')">
+                            <i class="fa-solid fa-book-open text-lg"></i>
+                            <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#f04423]"></span>
+                        </button>
+                        <button class="w-10 h-full flex items-center justify-center text-neutral-400 relative" onclick="showToast('더보기')">
+                            <div class="w-5 h-5 rounded-md border-2 border-neutral-400 flex items-center justify-center text-[10px] font-bold">5</div>
+                            <span class="absolute top-2 right-1.5 w-1.5 h-1.5 rounded-full bg-[#f04423]"></span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderKakaoFriendsTab() {
+            return `
+                <div class="px-4 pt-2 pb-4">
+                    <!-- Top Profile Row: Choi Soo-young -->
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-11 h-11 rounded-[16px] overflow-hidden border border-neutral-200 bg-neutral-100 flex-shrink-0 shadow-xs">
+                                <img src="https://i.imgur.com/BMxeONe.jpeg" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[19px] font-bold tracking-tight text-neutral-900">최수영</span>
+                        </div>
+                        <div class="flex items-center space-x-4 text-neutral-800 text-[18px]">
+                            <i class="fa-solid fa-magnifying-glass cursor-pointer" onclick="showToast('친구 검색')"></i>
+                            <i class="fa-solid fa-user-plus cursor-pointer" onclick="showToast('친구 추가')"></i>
+                            <i class="fa-solid fa-gift cursor-pointer" onclick="showToast('선물함')"></i>
+                            <i class="fa-solid fa-gear cursor-pointer" onclick="goHome()"></i>
+                        </div>
+                    </div>
+
+                    <!-- Filter Capsules -->
+                    <div class="flex space-x-2 mb-3.5">
+                        <span class="bg-neutral-900 text-white text-[12.5px] font-bold px-4 py-1.5 rounded-full shadow-xs">친구</span>
+                        <span class="bg-white text-neutral-600 text-[12.5px] font-semibold px-4 py-1.5 rounded-full shadow-2xs">소식</span>
+                    </div>
+
+                    <!-- Olive Young Black Friday Banner -->
+                    <div class="bg-white rounded-2xl p-3.5 mb-4 shadow-2xs border border-neutral-200/60 flex items-center justify-between cursor-pointer" onclick="showToast('🛍️ 올리브영 블프 쿠폰')">
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <div class="w-10 h-12 bg-amber-300 rounded-lg flex flex-col justify-center items-center text-[7.5px] font-extrabold text-neutral-900 leading-tight shadow-xs">
+                                <span>APP</span>
+                                <span>최대</span>
+                                <span class="text-[9px]">1만원</span>
+                            </div>
+                            <div class="w-10 h-12 bg-neutral-900 rounded-lg flex flex-col justify-center items-center text-[7.5px] font-extrabold text-white leading-tight shadow-xs">
+                                <span>매장</span>
+                                <span>최대</span>
+                                <span class="text-[9px]">1만원</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 ml-3 min-w-0">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-[13px] font-extrabold text-neutral-900">주목! 블프 선착순 쿠폰</span>
+                                <span class="text-[9px] bg-neutral-100 text-neutral-400 font-bold px-1 rounded">AD</span>
+                            </div>
+                            <p class="text-[11px] text-neutral-500 font-medium mt-0.5"><span class="bg-[#e02020] text-white px-1 py-0.2 rounded text-[9px] font-bold mr-1">혜택</span>최대 2만원 랜덤 쿠폰 도전</p>
+                        </div>
+                    </div>
+
+                    <!-- 업데이트 프로필 6 -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center text-xs text-neutral-600 font-bold mb-2.5">
+                            <span>업데이트 프로필 <strong class="text-neutral-900">6</strong></span>
+                            <i class="fa-solid fa-chevron-up text-[10px] text-neutral-400"></i>
+                        </div>
+                        <div class="flex space-x-3 overflow-x-auto no-scrollbar py-1">
+                            <!-- 1. 변승일 감독 (기본 프로필 아이콘) -->
+                            <div class="flex flex-col items-center flex-shrink-0 w-14 cursor-pointer" onclick="showToast('변승일 감독 프로필')">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-200 bg-neutral-200 flex items-center justify-center text-neutral-500">
+                                    <i class="fa-solid fa-user text-sm"></i>
+                                    <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                </div>
+                                <span class="text-[11px] font-medium text-neutral-800 mt-1 truncate w-full text-center">변승일 감독</span>
+                            </div>
+                            <!-- 2. 김성욱 (기본 프로필 아이콘) -->
+                            <div class="flex flex-col items-center flex-shrink-0 w-14 cursor-pointer" onclick="showToast('김성욱 프로필')">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-200 bg-neutral-200 flex items-center justify-center text-neutral-500">
+                                    <i class="fa-solid fa-user text-sm"></i>
+                                    <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                </div>
+                                <span class="text-[11px] font-medium text-neutral-800 mt-1 truncate w-full text-center">김성욱</span>
+                            </div>
+                            <!-- 3. 안다르 (AD) -->
+                            <div class="flex flex-col items-center flex-shrink-0 w-14 cursor-pointer" onclick="showToast('안다르 프로필')">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden bg-black text-white flex items-center justify-center font-bold text-[9px]">
+                                    andar
+                                    <span class="absolute -top-0.5 -left-0.5 bg-neutral-900 text-white text-[7px] font-bold px-1 rounded-full border border-white">AD</span>
+                                    <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                </div>
+                                <span class="text-[11px] font-medium text-neutral-800 mt-1 truncate w-full text-center">안다르</span>
+                            </div>
+                            <!-- 4. 유진 -->
+                            <div class="flex flex-col items-center flex-shrink-0 w-14 cursor-pointer" onclick="showToast('유진 프로필')">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-200 bg-amber-100 flex items-center justify-center">
+                                    <i class="fa-solid fa-dog text-amber-700 text-lg"></i>
+                                    <span class="absolute -top-1 left-2 text-[7px] bg-white px-1 rounded border shadow-2xs text-neutral-600">으심되</span>
+                                    <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                </div>
+                                <span class="text-[11px] font-medium text-neutral-800 mt-1 truncate w-full text-center">유진</span>
+                            </div>
+                            <!-- 5. 한가은 -->
+                            <div class="flex flex-col items-center flex-shrink-0 w-14 cursor-pointer" onclick="showToast('한가은 프로필')">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-200 bg-neutral-100">
+                                    <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=120&auto=format&fit=crop" class="w-full h-full object-cover">
+                                    <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                </div>
+                                <span class="text-[11px] font-medium text-neutral-800 mt-1 truncate w-full text-center">한가은</span>
+                            </div>
+                            <!-- 6. 선호 -->
+                            <div class="flex flex-col items-center flex-shrink-0 w-14 cursor-pointer" onclick="showToast('선호 프로필')">
+                                <div class="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-200 bg-neutral-100">
+                                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=120&auto=format&fit=crop" class="w-full h-full object-cover">
+                                </div>
+                                <span class="text-[11px] font-medium text-neutral-800 mt-1 truncate w-full text-center">선호</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 생일인 친구 -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center text-xs text-neutral-600 font-bold mb-2">
+                            <span>생일인 친구</span>
+                            <i class="fa-solid fa-chevron-up text-[10px] text-neutral-400"></i>
+                        </div>
+                        <div class="flex items-center space-x-3 p-2 rounded-xl bg-white/70 shadow-2xs cursor-pointer" onclick="showToast('🎂 친구 생일 확인')">
+                            <div class="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center text-rose-500 text-lg shadow-xs">
+                                <i class="fa-solid fa-cake-candles"></i>
+                            </div>
+                            <span class="text-[13px] font-semibold text-neutral-800">친구의 생일을 확인해 보세요.</span>
+                        </div>
+                    </div>
+
+                    <!-- 즐겨찾는 친구 1: 권유리 교수님 (기본 프로필 아이콘) -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center text-xs text-neutral-600 font-bold mb-2">
+                            <span>즐겨찾는 친구 <strong class="text-neutral-900">1</strong></span>
+                            <i class="fa-solid fa-chevron-up text-[10px] text-neutral-400"></i>
+                        </div>
+                        <div class="flex items-center space-x-3 p-2 rounded-xl bg-white/70 shadow-2xs cursor-pointer hover:bg-white transition" onclick="openKakaoRoom('권유리 교수님')">
+                            <div class="w-11 h-11 rounded-[16px] bg-[#96d8e3] text-white flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-xs">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <span class="text-[14px] font-bold text-neutral-900">권유리 교수님</span>
+                        </div>
+                    </div>
+
+                    <!-- 친구 367 -->
+                    <div class="mb-2">
+                        <div class="flex justify-between items-center text-xs text-neutral-600 font-bold mb-2">
+                            <span>친구 <strong class="text-neutral-900">367</strong></span>
+                            <div class="flex items-center space-x-1.5 text-[11px]">
+                                <span class="bg-white px-2 py-0.5 rounded-full text-neutral-700 shadow-2xs font-semibold">가나다순</span>
+                                <span class="bg-white px-2 py-0.5 rounded-full text-neutral-400 shadow-2xs font-semibold">친구추가순</span>
+                                <i class="fa-solid fa-chevron-up text-[10px] text-neutral-400 ml-1"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 p-2 rounded-xl bg-white/70 shadow-2xs cursor-pointer" onclick="showToast('👥 추천친구 58')">
+                            <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-500 text-lg shadow-xs">
+                                <i class="fa-solid fa-face-smile"></i>
+                            </div>
+                            <span class="text-[13px] font-semibold text-neutral-800">추천친구 58</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderKakaoChatsTab() {
+            return `
+                <div class="px-4 pt-2 pb-4">
+                    <!-- Top Header -->
+                    <div class="flex justify-between items-center mb-3">
+                        <h1 class="text-[22px] font-bold text-neutral-900">채팅</h1>
+                        <div class="flex items-center space-x-4 text-neutral-800 text-[18px]">
+                            <i class="fa-solid fa-magnifying-glass cursor-pointer" onclick="showToast('채팅방 검색')"></i>
+                            <i class="fa-regular fa-comment-dots cursor-pointer" onclick="showToast('새 채팅방 만들기')"></i>
+                            <i class="fa-solid fa-gear cursor-pointer" onclick="goHome()"></i>
+                        </div>
+                    </div>
+
+                    <!-- Filter Capsules (No notification number badge) -->
+                    <div class="flex space-x-2 mb-3.5 overflow-x-auto no-scrollbar items-center">
+                        <span class="bg-neutral-900 text-white text-[12px] font-bold px-3.5 py-1.5 rounded-full shadow-xs flex-shrink-0">전체</span>
+                        <span class="bg-white text-neutral-700 text-[12px] font-semibold px-3.5 py-1.5 rounded-full shadow-2xs flex-shrink-0">안읽음</span>
+                        <span class="bg-white text-neutral-700 text-[12px] font-semibold px-3.5 py-1.5 rounded-full shadow-2xs flex-shrink-0">ChatGPT</span>
+                        <span class="bg-white text-neutral-700 text-[12px] font-semibold px-3.5 py-1.5 rounded-full shadow-2xs flex-shrink-0">통화</span>
+                        <div class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-neutral-600 shadow-2xs flex-shrink-0">
+                            <i class="fa-solid fa-bars-staggered text-xs"></i>
+                        </div>
+                    </div>
+
+                    <!-- Olive Young Banner -->
+                    <div class="bg-white rounded-2xl p-3 mb-3.5 shadow-2xs border border-neutral-200/60 flex items-center justify-between cursor-pointer" onclick="showToast('🛍️ 올리브영 블프 쿠폰')">
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <div class="w-9 h-11 bg-amber-300 rounded-lg flex flex-col justify-center items-center text-[7px] font-black text-neutral-900 leading-tight shadow-xs">
+                                <span>APP</span>
+                                <span>최대 1만</span>
+                            </div>
+                            <div class="w-9 h-11 bg-neutral-900 rounded-lg flex flex-col justify-center items-center text-[7px] font-black text-white leading-tight shadow-xs">
+                                <span>매장</span>
+                                <span>최대 1만</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 ml-3 min-w-0">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-[12.5px] font-extrabold text-neutral-900">주목! 블프 선착순 쿠폰</span>
+                                <span class="text-[8px] bg-neutral-100 text-neutral-400 font-bold px-1 rounded">AD</span>
+                            </div>
+                            <p class="text-[10.5px] text-neutral-500 font-medium mt-0.5"><span class="bg-[#e02020] text-white px-1 py-0.2 rounded text-[8.5px] font-bold mr-1">혜택</span>최대 2만원 랜덤 쿠폰 도전</p>
+                        </div>
+                    </div>
+
+                    <!-- Chat List (Exact order requested) -->
+                    <div class="divide-y divide-neutral-200/50">
+                        <!-- 1) 나 최수영 -->
+                        <div class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition" onclick="showToast('나와의 채팅')">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] overflow-hidden border border-neutral-200 bg-neutral-100 flex-shrink-0 shadow-xs">
+                                    <img src="https://i.imgur.com/BMxeONe.jpeg" class="w-full h-full object-cover">
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="w-4 h-4 rounded-full bg-neutral-900 text-white text-[9px] font-bold flex items-center justify-center">나</span>
+                                        <span class="text-[14.5px] font-bold text-neutral-900">최수영</span>
+                                    </div>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">사진을 보냈습니다.</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 9:15</span>
+                        </div>
+
+                        <!-- 2) 카카오페이 -->
+                        <div class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition" onclick="showToast('카카오페이 알림')">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] bg-[#fee500] flex items-center justify-center flex-shrink-0 shadow-xs">
+                                    <span class="font-extrabold text-[13px] text-neutral-900">pay</span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-[14.5px] font-bold text-neutral-900">카카오페이</span>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">페이머니 충전 후 결제가 완료되었어요. ...</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 8:28</span>
+                        </div>
+
+                        <!-- 3) 예술사 연기과 3학년 공지방 19 -->
+                        <div class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition" onclick="showToast('예술사 연기과 3학년 공지방')">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] bg-slate-300 flex items-center justify-center text-white flex-shrink-0 shadow-xs">
+                                    <i class="fa-solid fa-users text-lg text-slate-600"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-[14px] font-bold text-neutral-900 truncate block">예술사 연기과 3학년 공지방 19</span>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">사진 5장을 보냈습니다.</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 7:31</span>
+                        </div>
+
+                        <!-- 4) 가족 4 -->
+                        <div class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition" onclick="showToast('가족 단톡방')">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] bg-emerald-200 flex items-center justify-center text-emerald-800 flex-shrink-0 shadow-xs font-bold text-sm">
+                                    가족
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="text-[14.5px] font-bold text-neutral-900">가족 4</span>
+                                        <i class="fa-solid fa-bell-slash text-[11px] text-neutral-400"></i>
+                                    </div>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">넵!!!!</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 4:26</span>
+                        </div>
+
+                        <!-- 5) 연출17고은해 -->
+                        <div class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition" onclick="showToast('연출17고은해 대화방')">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] bg-neutral-900 text-white flex items-center justify-center font-bold text-[9px] flex-shrink-0 shadow-xs">
+                                    FLEABAG
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-[14.5px] font-bold text-neutral-900">연출17고은해</span>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">사진을 보냈습니다.</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 3:47</span>
+                        </div>
+
+                        <!-- 6) 권유리 교수님 (Placed directly BELOW 연출17고은해, 기본 아이콘) -->
+                        <div onclick="openKakaoRoom('권유리 교수님')" class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] bg-[#96d8e3] text-white flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-xs">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-[14.5px] font-bold text-neutral-900">권유리 교수님</span>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">${yuriMessages[yuriMessages.length - 1].text}</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 11:05</span>
+                        </div>
+
+                        <!-- 7) 언니 -->
+                        <div class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition" onclick="showToast('언니와의 대화')">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] overflow-hidden border border-neutral-200 bg-neutral-100 flex-shrink-0 shadow-xs">
+                                    <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=120&auto=format&fit=crop" class="w-full h-full object-cover">
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-[14.5px] font-bold text-neutral-900">언니</span>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">https://youtube.com/shorts/B3NQH31JI6w?...</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 3:16</span>
+                        </div>
+
+                        <!-- 8) 카카오톡 -->
+                        <div class="py-3 flex justify-between items-start cursor-pointer hover:bg-white/60 rounded-xl px-1 transition" onclick="showToast('카카오톡 시스템 공지')">
+                            <div class="flex space-x-3 items-center min-w-0 flex-1 pr-2">
+                                <div class="w-12 h-12 rounded-[17px] bg-[#fee500] text-neutral-900 font-extrabold text-[12px] flex items-center justify-center flex-shrink-0 shadow-xs">
+                                    TALK
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-[14.5px] font-bold text-neutral-900">카카오톡</span>
+                                    <p class="text-[12px] text-neutral-500 truncate mt-0.5">[PC버전 자동로그인]</p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-neutral-400 font-medium flex-shrink-0">오후 1:59</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderKakaoRoomView() {
+            let messagesHtml = '';
+            yuriMessages.forEach(m => {
+                if (m.type === 'date') {
+                    messagesHtml += `<div class="flex justify-center my-3"><span class="bg-black/15 text-white text-[10px] px-3 py-1 rounded-full font-medium shadow-xs">${m.text}</span></div>`;
+                } else if (m.type === 'in-first') {
+                    messagesHtml += `<div class="flex items-start space-x-2 mt-2 mb-1.5"><div class="w-9 h-9 rounded-[14px] bg-[#96d8e3] text-white flex items-center justify-center flex-shrink-0 shadow-xs"><i class="fa-solid fa-user text-xs"></i></div><div><p class="text-[11px] text-neutral-700 mb-1">${m.sender}</p><div class="flex items-end space-x-1.5"><div class="bg-white text-neutral-900 px-3.5 py-2 rounded-[18px] rounded-tl-xs text-[14px] shadow-sm max-w-[230px] whitespace-pre-wrap">${m.text}</div>${m.time ? `<span class="text-[10px] text-neutral-600">${m.time}</span>` : ''}</div></div></div>`;
+                } else if (m.type === 'typing') {
+                    messagesHtml += `<div class="flex items-start space-x-2 mt-2 mb-1.5"><div class="w-9 h-9 rounded-[14px] bg-[#96d8e3] text-white flex items-center justify-center flex-shrink-0 shadow-xs"><i class="fa-solid fa-user text-xs"></i></div><div><p class="text-[11px] text-neutral-700 mb-1">${m.sender}</p><div class="bg-white text-neutral-500 px-4 py-2.5 rounded-[18px] rounded-tl-xs text-[14px] shadow-sm flex items-center space-x-1"><span class="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"></span><span class="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.2s]"></span><span class="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.4s]"></span></div></div></div>`;
+                } else if (m.type === 'out') {
+                    messagesHtml += `<div class="flex justify-end items-end space-x-1.5 mb-1.5">${m.time ? `<span class="text-[10px] text-neutral-600">${m.time}</span>` : ''}<div class="bg-[#fee500] text-neutral-900 px-3.5 py-2 rounded-[18px] rounded-tr-xs text-[14px] shadow-sm max-w-[235px] whitespace-pre-wrap">${m.text}</div></div>`;
+                }
+            });
+
+            return `
+                <div class="flex flex-col h-full w-full bg-[#b2c7d9] text-neutral-900 pt-11 pb-5 relative select-none">
+                    <div class="px-3 py-2 flex justify-between items-center z-20">
+                        <button onclick="closeKakaoRoom()" class="bg-white/95 px-3 py-1.5 rounded-full flex items-center space-x-1 shadow-sm active:scale-95 transition">
+                            <i class="fa-solid fa-chevron-left text-sm"></i>
+                        </button>
+                        <h2 class="text-[16px] font-bold">${kakaoActiveRoom}</h2>
+                        <div class="bg-white/95 px-3.5 py-1.5 rounded-full flex items-center space-x-3.5 shadow-sm text-sm">
+                            <i class="fa-solid fa-magnifying-glass cursor-pointer" onclick="showToast('채팅 검색')"></i>
+                            <i class="fa-solid fa-phone text-emerald-600 cursor-pointer hover:scale-110 transition" onclick="startPhoneCall('${kakaoActiveRoom}')"></i>
+                            <i class="fa-solid fa-bars cursor-pointer" onclick="showToast('서랍')"></i>
+                        </div>
+                    </div>
+                    <div id="kakao-room-scroll" class="flex-1 overflow-y-auto px-3 py-2 no-scrollbar scroll-auto">${messagesHtml}</div>
+                    <div class="px-3 pt-1.5">
+                        <div class="bg-white/95 rounded-full px-2 py-1.5 flex items-center space-x-2 shadow-sm">
+                            <button class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
+                            <input type="text" id="kakao-chat-input" placeholder="메시지 입력" class="flex-1 bg-transparent text-[14px] focus:outline-none" onkeypress="if(event.key==='Enter') sendYuriMessage()">
+                            <button onclick="sendYuriMessage()" class="w-8 h-8 rounded-full bg-[#fee500] flex items-center justify-center font-bold text-xs shadow-sm hover:opacity-90 active:scale-95 transition">전송</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateKakaoMessagesOnly() {
+            const scrollEl = document.getElementById('kakao-room-scroll');
+            if (!scrollEl) return;
+            let messagesHtml = '';
+            yuriMessages.forEach(m => {
+                if (m.type === 'date') {
+                    messagesHtml += `<div class="flex justify-center my-3"><span class="bg-black/15 text-white text-[10px] px-3 py-1 rounded-full font-medium shadow-xs">${m.text}</span></div>`;
+                } else if (m.type === 'in-first') {
+                    messagesHtml += `<div class="flex items-start space-x-2 mt-2 mb-1.5"><div class="w-9 h-9 rounded-[14px] bg-[#96d8e3] text-white flex items-center justify-center flex-shrink-0 shadow-xs"><i class="fa-solid fa-user text-xs"></i></div><div><p class="text-[11px] text-neutral-700 mb-1">${m.sender}</p><div class="flex items-end space-x-1.5"><div class="bg-white text-neutral-900 px-3.5 py-2 rounded-[18px] rounded-tl-xs text-[14px] shadow-sm max-w-[230px] whitespace-pre-wrap">${m.text}</div>${m.time ? `<span class="text-[10px] text-neutral-600">${m.time}</span>` : ''}</div></div></div>`;
+                } else if (m.type === 'typing') {
+                    messagesHtml += `<div class="flex items-start space-x-2 mt-2 mb-1.5"><div class="w-9 h-9 rounded-[14px] bg-[#96d8e3] text-white flex items-center justify-center flex-shrink-0 shadow-xs"><i class="fa-solid fa-user text-xs"></i></div><div><p class="text-[11px] text-neutral-700 mb-1">${m.sender}</p><div class="bg-white text-neutral-500 px-4 py-2.5 rounded-[18px] rounded-tl-xs text-[14px] shadow-sm flex items-center space-x-1"><span class="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"></span><span class="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.2s]"></span><span class="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.4s]"></span></div></div></div>`;
+                } else if (m.type === 'out') {
+                    messagesHtml += `<div class="flex justify-end items-end space-x-1.5 mb-1.5">${m.time ? `<span class="text-[10px] text-neutral-600">${m.time}</span>` : ''}<div class="bg-[#fee500] text-neutral-900 px-3.5 py-2 rounded-[18px] rounded-tr-xs text-[14px] shadow-sm max-w-[235px] whitespace-pre-wrap">${m.text}</div></div>`;
+                }
+            });
+            scrollEl.innerHTML = messagesHtml;
+            scrollEl.scrollTop = scrollEl.scrollHeight;
+        }
+
+        function scrollToKakaoBottom() {
+            const el = document.getElementById('kakao-room-scroll');
+            if (el) el.scrollTop = el.scrollHeight;
+        }
+
+        function sendYuriMessage() {
+            const input = document.getElementById('kakao-chat-input');
+            if (!input || !input.value.trim()) return;
+            let text = input.value.trim();
+            const currentTime = "11:22";
+            
+            if (!hasAddedJune22Date) {
+                yuriMessages.push({ type: 'date', text: '[20xx년 6월 22일]' });
+                hasAddedJune22Date = true;
+            }
+
+            yuriMessages.push({ type: 'out', text: text, time: currentTime });
+            input.value = '';
+            updateKakaoMessagesOnly();
+            input.focus();
+
+            if (kakaoActiveRoom === '권유리 교수님') {
+                if (text === '사랑해' || text === '사랑해요') {
+                    setTimeout(() => {
+                        yuriMessages.push({ type: 'typing', sender: '권유리 교수님', time: currentTime });
+                        if (phoneState === 'app' && kakaoCurrentView === 'room' && kakaoActiveRoom === '권유리 교수님') {
+                            updateKakaoMessagesOnly();
+                        }
+                        setTimeout(() => {
+                            yuriMessages = yuriMessages.filter(m => m.type !== 'typing');
+                            yuriMessages.push({ type: 'in-first', sender: '권유리 교수님', text: '수영아', time: currentTime });
+                            if (phoneState === 'app' && kakaoCurrentView === 'room' && kakaoActiveRoom === '권유리 교수님') {
+                                updateKakaoMessagesOnly();
+                            }
+                            setTimeout(() => {
+                                yuriMessages.push({ type: 'in-first', sender: '권유리 교수님', text: '많이 취했네', time: currentTime });
+                                if (phoneState === 'app' && kakaoCurrentView === 'room' && kakaoActiveRoom === '권유리 교수님') {
+                                    updateKakaoMessagesOnly();
+                                }
+                                setTimeout(() => {
+                                    yuriMessages.push({ type: 'in-first', sender: '권유리 교수님', text: '금방 데리러 갈게', time: currentTime });
+                                    if (phoneState === 'app' && kakaoCurrentView === 'room' && kakaoActiveRoom === '권유리 교수님') {
+                                        updateKakaoMessagesOnly();
+                                    }
+                                }, 1200);
+                            }, 1200);
+                        }, 1500);
+                    }, 500);
+                } else if (text.includes('권유리') || text.includes('교수님') || text.includes('선생님') || text.includes('쌤')) {
+                    setTimeout(() => {
+                        yuriMessages.push({ type: 'typing', sender: '권유리 교수님', time: currentTime });
+                        if (phoneState === 'app' && kakaoCurrentView === 'room' && kakaoActiveRoom === '권유리 교수님') {
+                            updateKakaoMessagesOnly();
+                        }
+                        setTimeout(() => {
+                            yuriMessages = yuriMessages.filter(m => m.type !== 'typing');
+                            yuriMessages.push({ type: 'in-first', sender: '권유리 교수님', text: '왜?', time: currentTime });
+                            if (phoneState === 'app' && kakaoCurrentView === 'room' && kakaoActiveRoom === '권유리 교수님') {
+                                updateKakaoMessagesOnly();
+                            }
+                            setTimeout(() => {
+                                yuriMessages.push({ type: 'in-first', sender: '권유리 교수님', text: '무슨 일 생겼어?', time: currentTime });
+                                if (phoneState === 'app' && kakaoCurrentView === 'room' && kakaoActiveRoom === '권유리 교수님') {
+                                    updateKakaoMessagesOnly();
+                                }
+                            }, 1200);
+                        }, 1500);
+                    }, 500);
+                }
+            }
+        }
+
+        /* ==============================================================
+           1. EVERYTIME APP
+        ============================================================== */
+        function openEverytimeDetail() {
+            everytimeDetailOpen = true;
+            document.getElementById('app-window').innerHTML = renderEverytimeApp();
+        }
+
+        function closeEverytimeDetail() {
+            everytimeDetailOpen = false;
+            document.getElementById('app-window').innerHTML = renderEverytimeApp();
+        }
+
+        function renderEverytimeApp() {
+            if (everytimeDetailOpen) {
+                return `
+                    <div class="flex flex-col h-full bg-white text-neutral-900 pt-11 pb-6 select-none relative">
+                        <div class="px-4 py-3 bg-white border-b border-neutral-200 flex justify-between items-center">
+                            <i class="fa-solid fa-chevron-left text-lg cursor-pointer" onclick="closeEverytimeDetail()"></i>
+                            <h1 class="text-base font-extrabold tracking-tight">연기실습 5 강의실</h1>
+                            <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="closeEverytimeDetail()"></i>
+                        </div>
+                        <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-neutral-100">
+                                <div class="flex items-baseline space-x-2">
+                                    <span class="text-2xl font-black text-neutral-900">5.00</span>
+                                    <div class="flex text-amber-400 text-xs">
+                                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2 text-xs text-neutral-500 font-semibold">
+                                    <span class="bg-neutral-100 px-2.5 py-1 rounded-lg">전체 <i class="fa-solid fa-chevron-down text-[9px]"></i></span>
+                                    <span class="bg-neutral-100 px-2.5 py-1 rounded-lg">등록순 <i class="fa-solid fa-chevron-down text-[9px]"></i></span>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5 pb-3 border-b border-neutral-100">
+                                <div class="flex text-amber-400 text-[11px]"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                                <p class="text-[11px] text-neutral-400 font-medium">XX년 1학기 수강자</p>
+                                <p class="text-xs text-neutral-800 leading-relaxed">스스로에게 집중해야만 하는 수업<br>중간 희곡 발표/기말 희곡 극 올려서 발표 이렇게 나뉜다<br>무엇보다 교수님이 수업에 대한 열정이 넘치심<br>이번학기에 파트너 한명 갑자기 자퇴해서 혼자해야했던 여자애 있었는데 자처해서 상대역 해주심<br>성적은 사바사지만 열심히 한 만큼 나오는 것 같음</p>
+                            </div>
+                            <div class="space-y-1.5 pb-3">
+                                <div class="flex text-amber-400 text-[11px]"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                                <p class="text-[11px] text-neutral-400 font-medium">XX년 1학기 수강자</p>
+                                <p class="text-xs text-neutral-800 leading-relaxed">"나"라는 사람으로서 진실하게 표현하고 연기한다면 좋은 반응을 보여주시는 편. 한 학기 내내 매주 다른 브레히트 극, 부조리 극 등등 연기해보지 못한 극들을 연기함. 할 일은 정말 많지만, 그만큼 얻어가는것도 압도적으로 많은 수업이다. <br><br>피드백을 바로바로 주시는 편이고 초반에는 수업을 위한 몸풀기나 마음가짐 등을 천천히 배우다 나라는 사람으로서 장면을 만들어보기 시작함. 매주 수업 후 연기실습 일지를 쓰는데 분량도 자유 형식도 자유라 그냥 간단하게 수업후기+일기 쓰는 느낌처럼 생각한다면 부담스럽지 않을 것임. 과도한 결석/지각만 아니라면 성적 나쁘지 않게 주신다.</p>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-16 left-0 right-0 px-6 flex justify-center pointer-events-none">
+                            <button onclick="showToast('✏️ 평가하기 창이 열렸습니다.')" class="pointer-events-auto bg-[#ed3a32] text-white font-bold text-sm px-8 py-3 rounded-full shadow-lg flex items-center space-x-2 active:scale-95 transition">
+                                <i class="fa-solid fa-pen-to-square"></i><span>평가하기</span>
+                            </button>
+                        </div>
+                        <div class="h-[54px] bg-white border-t border-neutral-200 flex justify-around items-center px-2 flex-shrink-0">
+                            <button onclick="showToast('개요 탭')" class="flex flex-col items-center justify-center text-neutral-400"><i class="fa-solid fa-circle-info text-lg"></i><span class="text-[10px] mt-0.5">개요</span></button>
+                            <button onclick="showToast('강의평 탭')" class="flex flex-col items-center justify-center text-[#ed3a32]"><i class="fa-solid fa-star text-lg"></i><span class="text-[10px] mt-0.5 font-bold">강의평</span></button>
+                            <button onclick="showToast('시험 정보 탭')" class="flex flex-col items-center justify-center text-neutral-400"><i class="fa-solid fa-file-lines text-lg"></i><span class="text-[10px] mt-0.5">시험 정보</span></button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="flex flex-col h-full bg-[#f8f8f8] text-neutral-900 pt-11 pb-6 select-none">
+                    <div class="px-4 py-2.5 bg-white flex justify-between items-center flex-shrink-0">
+                        <div class="w-8 h-8 flex items-center justify-center">
+                            <svg viewBox="0 0 100 100" class="w-7 h-7">
+                                <path d="M 20 50 A 30 30 0 0 0 80 50" fill="none" stroke="#262626" stroke-width="14" stroke-linecap="round"/>
+                                <circle cx="75" cy="30" r="10.5" fill="#262626"/>
+                                <path d="M 43 42 L 46 56 A 4 4 0 0 0 54 56 L 57 42 Z" fill="#e0140a"/>
+                                <circle cx="50" cy="40" r="7.5" fill="#ff1e14"/>
+                            </svg>
+                        </div>
+                        <div class="flex items-center space-x-4 text-neutral-800">
+                            <i class="fa-solid fa-magnifying-glass text-[19px] cursor-pointer" onclick="showToast('🔍 검색')"></i>
+                            <div class="relative cursor-pointer" onclick="showToast('🔔 알림 20개')">
+                                <i class="fa-regular fa-bell text-[20px]"></i>
+                                <span class="absolute -top-1.5 -right-2 bg-[#ed3a32] text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full leading-tight">20</span>
+                            </div>
+                            <div class="w-7 h-7 rounded-full bg-[#cce2ff] flex items-center justify-center text-white overflow-hidden cursor-pointer" onclick="showToast('👤 내 정보')">
+                                <i class="fa-solid fa-user text-sm text-[#66a3ff] mt-1"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-4 bg-white">
+                        <div class="px-4 pt-2">
+                            <h1 class="text-[21px] font-extrabold tracking-tight text-neutral-900">중희대학교</h1>
+                        </div>
+
+                        <!-- Top Horizontal Cards -->
+                        <div class="px-4 flex space-x-2.5 overflow-x-auto no-scrollbar">
+                            <div class="min-w-[210px] flex-1 bg-[#eefaf8] p-4 rounded-2xl flex flex-col justify-between h-[118px] cursor-pointer shadow-2xs hover:opacity-90" onclick="showToast('🎨 학생 예술제 일정')">
+                                <div>
+                                    <h3 class="text-[15px] font-extrabold text-neutral-900">학생 예술제</h3>
+                                    <p class="text-[12px] text-neutral-500 font-medium mt-0.5">10월 22일 (목) ~ 10월 23일 (금)</p>
+                                </div>
+                                <div class="text-[12px] font-bold text-neutral-600 flex items-center space-x-1">
+                                    <span>일정 더 보기</span>
+                                    <i class="fa-solid fa-chevron-right text-[9px] text-neutral-400"></i>
+                                </div>
+                            </div>
+
+                            <div class="min-w-[165px] bg-white border border-neutral-200/80 p-4 rounded-2xl flex flex-col justify-between h-[118px] cursor-pointer shadow-2xs hover:bg-neutral-50" onclick="showToast('📝 오늘의 할일')">
+                                <div>
+                                    <h3 class="text-[15px] font-extrabold text-neutral-900">오늘의 할일</h3>
+                                    <p class="text-[12px] text-neutral-500 font-medium mt-0.5">6월 22일 월요일</p>
+                                </div>
+                                <div class="flex items-center space-x-2.5 text-[12px] font-bold text-neutral-600">
+                                    <span class="flex items-center space-x-1"><i class="fa-regular fa-square-plus text-neutral-400"></i><span>추가</span></span>
+                                    <span class="flex items-center space-x-1"><i class="fa-solid fa-list-ul text-neutral-400 text-[10px]"></i><span>전체 보기</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6 Quick Menu Icons -->
+                        <div class="px-3 pt-1 grid grid-cols-6 gap-1 text-center">
+                            <div class="flex flex-col items-center cursor-pointer" onclick="showToast('✨ 제미나이 라운지')">
+                                <div class="w-10 h-10 flex items-center justify-center relative">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-xl bg-gradient-to-tr from-blue-500 via-purple-500 to-red-500 bg-clip-text text-transparent"></i>
+                                    <span class="absolute -bottom-0.5 right-0 text-[8px] bg-neutral-100 text-neutral-400 px-1 rounded border border-neutral-200">광고</span>
+                                </div>
+                                <span class="text-[11px] text-neutral-700 font-medium leading-tight mt-1">제미나이<br>라운지</span>
+                            </div>
+                            <div class="flex flex-col items-center cursor-pointer" onclick="showToast('📅 모임일정 투표')">
+                                <div class="w-10 h-10 flex items-center justify-center">
+                                    <i class="fa-regular fa-calendar-check text-xl text-[#ff4b3e]"></i>
+                                </div>
+                                <span class="text-[11px] text-neutral-700 font-medium leading-tight mt-1">모임일정<br>투표</span>
+                            </div>
+                            <div class="flex flex-col items-center cursor-pointer" onclick="showToast('🏫 중희대학교 홈')">
+                                <div class="w-10 h-10 flex items-center justify-center">
+                                    <i class="fa-solid fa-building-columns text-xl text-[#ff5a4f]"></i>
+                                </div>
+                                <span class="text-[11px] text-neutral-700 font-medium leading-tight mt-1">학교<br>홈</span>
+                            </div>
+                            <div class="flex flex-col items-center cursor-pointer" onclick="showToast('📢 학교뉴스')">
+                                <div class="w-10 h-10 flex items-center justify-center">
+                                    <i class="fa-solid fa-bullhorn text-xl text-[#ff4b3e]"></i>
+                                </div>
+                                <span class="text-[11px] text-neutral-700 font-medium leading-tight mt-1">학교뉴스</span>
+                            </div>
+                            <div class="flex flex-col items-center cursor-pointer" onclick="showToast('🚌 셔틀 버스')">
+                                <div class="w-10 h-10 flex items-center justify-center">
+                                    <i class="fa-solid fa-bus text-xl text-[#ff4b3e]"></i>
+                                </div>
+                                <span class="text-[11px] text-neutral-700 font-medium leading-tight mt-1">셔틀<br>버스</span>
+                            </div>
+                            <div class="flex flex-col items-center cursor-pointer" onclick="showToast('🔔 학사 공지')">
+                                <div class="w-10 h-10 flex items-center justify-center">
+                                    <i class="fa-solid fa-bell text-xl text-sky-400"></i>
+                                </div>
+                                <span class="text-[11px] text-neutral-700 font-medium leading-tight mt-1">학사<br>공지</span>
+                            </div>
+                        </div>
+
+                        <!-- Section: 즐겨찾는 게시판 -->
+                        <div class="px-4 pt-2">
+                            <div class="flex justify-between items-center mb-2.5">
+                                <h2 class="text-[18px] font-extrabold text-neutral-900">즐겨찾는 게시판</h2>
+                                <span class="text-[12px] text-neutral-400 font-semibold cursor-pointer" onclick="showToast('전체 게시판 보기')">더 보기 &gt;</span>
+                            </div>
+                            <div class="bg-white rounded-2xl border border-neutral-200/80 p-4 space-y-3.5 shadow-2xs">
+                                <div class="flex justify-between items-center cursor-pointer" onclick="showToast('자유게시판')">
+                                    <div class="flex items-center space-x-3 min-w-0 flex-1 pr-2">
+                                        <span class="text-[14px] font-semibold text-neutral-900 flex-shrink-0">자유게시판</span>
+                                        <span class="text-[13px] text-neutral-500 truncate">3ㄷ3</span>
+                                    </div>
+                                    <span class="w-4 h-4 rounded-full bg-[#ed3a32] text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">N</span>
+                                </div>
+                                <div class="flex justify-between items-center cursor-pointer" onclick="showToast('비밀게시판')">
+                                    <div class="flex items-center space-x-3 min-w-0 flex-1 pr-2">
+                                        <span class="text-[14px] font-semibold text-neutral-900 flex-shrink-0">비밀게시판</span>
+                                        <span class="text-[13px] text-neutral-500 truncate">카페 알바생 번따하고픈데... ㅠ 조언좀</span>
+                                    </div>
+                                    <span class="w-4 h-4 rounded-full bg-[#ed3a32] text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">N</span>
+                                </div>
+                                <div class="flex justify-between items-center cursor-pointer" onclick="showToast('졸업생게시판')">
+                                    <div class="flex items-center space-x-3 min-w-0 flex-1 pr-2">
+                                        <span class="text-[14px] font-semibold text-neutral-900 flex-shrink-0">졸업생게시판</span>
+                                        <span class="text-[13px] text-neutral-500 truncate">영상원 전문사 졸업예정자</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center cursor-pointer" onclick="showToast('새내기게시판')">
+                                    <div class="flex items-center space-x-3 min-w-0 flex-1 pr-2">
+                                        <span class="text-[14px] font-semibold text-neutral-900 flex-shrink-0">새내기게시판</span>
+                                        <span class="text-[13px] text-neutral-500 truncate">냐옹~🐈 시험 끝나고 같이 놀...</span>
+                                    </div>
+                                    <span class="w-4 h-4 rounded-full bg-[#ed3a32] text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">N</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section: 최근 강의평 -->
+                        <div class="px-4 pt-2">
+                            <div class="flex justify-between items-center mb-2.5">
+                                <h2 class="text-[18px] font-extrabold text-neutral-900">최근 강의평</h2>
+                                <span class="text-[12px] text-neutral-400 font-semibold cursor-pointer" onclick="openEverytimeDetail()">더 보기 &gt;</span>
+                            </div>
+                            <div class="space-y-2.5">
+                                <div onclick="openEverytimeDetail()" class="bg-white p-4 rounded-2xl border border-neutral-200/80 shadow-2xs cursor-pointer hover:bg-neutral-50 transition">
+                                    <div class="flex text-amber-400 text-xs mb-1.5 space-x-0.5">
+                                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                                    </div>
+                                    <p class="text-[14px] font-extrabold text-neutral-900">연기실습 5 : 권유리</p>
+                                    <p class="text-[13px] text-neutral-600 mt-1 leading-snug">스스로에게 집중해야만 하는 수업 중간 희곡 발표/기말 희곡 극 올려서 발표...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Nav -->
+                    <div class="h-[54px] bg-white border-t border-neutral-200 flex justify-around items-center px-2 flex-shrink-0">
+                        <button onclick="goHome()" class="flex flex-col items-center justify-center text-neutral-900"><i class="fa-solid fa-house text-lg"></i><span class="text-[10px] font-bold mt-0.5">홈</span></button>
+                        <button onclick="goHome()" class="flex flex-col items-center justify-center text-neutral-400"><i class="fa-solid fa-table-cells-large text-lg"></i><span class="text-[10px] mt-0.5">시간표</span></button>
+                        <button onclick="goHome()" class="flex flex-col items-center justify-center text-neutral-400"><i class="fa-solid fa-comments text-lg"></i><span class="text-[10px] mt-0.5">게시판</span></button>
+                        <button onclick="goHome()" class="flex flex-col items-center justify-center text-neutral-400"><i class="fa-regular fa-comment-dots text-lg"></i><span class="text-[10px] mt-0.5">채팅</span></button>
+                        <button onclick="goHome()" class="flex flex-col items-center justify-center text-neutral-400"><i class="fa-solid fa-bag-shopping text-lg"></i><span class="text-[10px] mt-0.5">쇼핑</span></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ==============================================================
+           3. PHOTOS APP (NO '수요일, 오후 9:27' in detail view)
+        ============================================================== */
+        const galleryPhotos = [
+            "https://i.imgur.com/staLtXf.png",
+            "https://i.imgur.com/V0ozrO8.jpeg",
+            "https://i.imgur.com/hvKcfo2.jpeg",
+            "https://i.imgur.com/Och7NUp.jpeg",
+            "https://i.imgur.com/daRNmsY.jpeg",
+            "https://i.imgur.com/ML1qysZ.jpeg",
+            "https://i.imgur.com/U517XyK.jpeg",
+            "https://i.imgur.com/3AUitTv.png",
+            "https://i.imgur.com/u7A8OU7.jpeg",
+            "https://i.imgur.com/v390YKk.jpeg",
+            "https://i.imgur.com/9aGgIFw.jpeg",
+            "https://i.imgur.com/mDcNDi7.jpeg",
+            "https://i.imgur.com/hyBOe2N.jpeg",
+            "https://i.imgur.com/b0MWVZf.jpeg",
+            "https://i.imgur.com/o4vGAIJ.jpeg",
+            "https://i.imgur.com/PFK3QEr.jpeg",
+            "https://i.imgur.com/93xeFJK.jpeg"
+        ];
+
+        let activePhotoIndex = null;
+        let photosCurrentTab = 'library';
+        let photoTouchStartX = 0;
+        let photoMouseDownX = 0;
+        let isPhotoDragging = false;
+
+        function switchPhotosTab(tab) {
+            photosCurrentTab = tab;
+            document.getElementById('app-window').innerHTML = renderPhotosApp();
+        }
+
+        function renderPhotosApp() {
+            if (activePhotoIndex !== null) return renderPhotoDetail(activePhotoIndex);
+            
+            let tabContent = '';
+            if (photosCurrentTab === 'library') {
+                tabContent = `
+                    <div class="flex-1 overflow-y-auto px-0.5 pt-1 no-scrollbar bg-white">
+                        <div class="grid grid-cols-3 gap-0.5 pb-28">
+                            ${galleryPhotos.map((url, i) => `
+                                <div class="aspect-square bg-neutral-100 cursor-pointer overflow-hidden relative group" onclick="openPhotoDetail(${i})">
+                                    <img src="${url}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" onerror="this.src='https://placehold.co/200x200/222222/ffffff?text=Photo+${i+1}'">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                tabContent = `
+                    <div class="flex-1 overflow-y-auto p-4 no-scrollbar bg-white pb-28">
+                        <h2 class="text-xl font-bold text-neutral-800 mb-3">모음</h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-neutral-100 p-3 rounded-2xl flex flex-col justify-between h-32 cursor-pointer shadow-xs hover:bg-neutral-200 transition" onclick="showToast('📁 인물 모음')">
+                                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm"><i class="fa-solid fa-user text-neutral-700"></i></div>
+                                <span class="text-sm font-bold text-neutral-800">인물 및 반려동물</span>
+                            </div>
+                            <div class="bg-neutral-100 p-3 rounded-2xl flex flex-col justify-between h-32 cursor-pointer shadow-xs hover:bg-neutral-200 transition" onclick="showToast('📁 장소 모음')">
+                                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm"><i class="fa-solid fa-location-dot text-neutral-700"></i></div>
+                                <span class="text-sm font-bold text-neutral-800">장소</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="flex flex-col h-full bg-white text-neutral-900 pt-11 pb-1 justify-between select-none relative">
+                    <div class="px-4 pt-2 pb-2 bg-white flex-shrink-0">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h1 class="text-[34px] font-extrabold tracking-tight leading-tight text-neutral-900">${photosCurrentTab === 'library' ? '보관함' : '모음'}</h1>
+                                <p class="text-xs text-neutral-500 font-semibold mt-0.5">213,970개의 항목</p>
+                            </div>
+                            <div class="flex items-center space-x-2 mt-2">
+                                <div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800 cursor-pointer hover:bg-neutral-200">
+                                    <i class="fa-solid fa-bars text-xs"></i>
+                                </div>
+                                <div class="px-4 py-1.5 rounded-full bg-neutral-100 text-xs font-bold text-neutral-800 cursor-pointer hover:bg-neutral-200">
+                                    선택
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${tabContent}
+
+                    <!-- Floating Capsule Navigation Bar -->
+                    <div class="absolute bottom-4 left-0 right-0 px-4 flex justify-between items-center z-30 pointer-events-none">
+                        <div class="pointer-events-auto bg-white/95 backdrop-blur-xl border border-neutral-200/80 rounded-full p-1.5 flex items-center shadow-xl">
+                            <button onclick="switchPhotosTab('library')" class="flex items-center space-x-2 px-4 py-2 rounded-full transition ${photosCurrentTab === 'library' ? 'bg-neutral-100 shadow-xs' : 'hover:bg-neutral-50'}">
+                                <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM13.96 12.29L11.21 15.83L9.25 13.47L6.5 17H17.5L13.96 12.29Z"/>
+                                </svg>
+                                <span class="text-xs font-bold text-blue-600">보관함</span>
+                            </button>
+                            <button onclick="switchPhotosTab('collections')" class="flex items-center space-x-2 px-4 py-2 rounded-full transition ${photosCurrentTab === 'collections' ? 'bg-neutral-100 shadow-xs' : 'hover:bg-neutral-50'}">
+                                <svg class="w-5 h-5 text-neutral-800" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M4 6H20V8H4V6ZM4 11H20V13H4V11ZM4 16H20V18H4V16Z"/>
+                                </svg>
+                                <span class="text-xs font-bold text-neutral-800">모음</span>
+                            </button>
+                        </div>
+                        <div class="pointer-events-auto w-12 h-12 rounded-full bg-white border border-neutral-200/80 flex items-center justify-center text-neutral-900 text-lg shadow-xl cursor-pointer hover:bg-neutral-50 transition active:scale-95" onclick="showToast('🔍 사진 검색')">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openPhotoDetail(index) {
+            activePhotoIndex = index;
+            document.getElementById('app-window').innerHTML = renderPhotosApp();
+        }
+
+        function closePhotoDetail() {
+            activePhotoIndex = null;
+            document.getElementById('app-window').innerHTML = renderPhotosApp();
+        }
+
+        function renderPhotoDetail(index) {
+            const photoUrl = galleryPhotos[index] || galleryPhotos[0];
+            return `
+                <div class="flex flex-col h-full bg-white text-neutral-900 pt-11 pb-2 justify-between select-none overflow-hidden"
+                     ontouchstart="photoTouchStartX = event.touches[0].clientX"
+                     ontouchend="handlePhotoSwipe(event, ${index})"
+                     onmousedown="photoMouseDownX = event.clientX; isPhotoDragging = true;"
+                     onmouseup="isPhotoDragging = false; handleMouseSwipe(event, ${index});"
+                     onmouseleave="isPhotoDragging = false;">
+                    <!-- Detail Header: NO date or time label -->
+                    <div class="px-3 py-2 flex justify-between items-center text-sm z-20 bg-white">
+                        <button onclick="closePhotoDetail()" class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800 shadow-xs cursor-pointer active:scale-95 transition">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <div class="flex-1"></div>
+                        <div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800 shadow-xs cursor-pointer" onclick="showToast('사진 설정')">
+                            <i class="fa-solid fa-ellipsis"></i>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex items-center justify-center p-2 relative bg-white overflow-hidden cursor-grab active:cursor-grabbing">
+                        <img src="${photoUrl}" decoding="async" class="max-h-full max-w-full object-contain rounded-md shadow-md transition-all duration-200 pointer-events-none" onerror="this.src='https://placehold.co/400x500/222222/ffffff?text=Photo+${index+1}'">
+                    </div>
+
+                    <div class="px-2 py-1.5 bg-white">
+                        <div class="flex space-x-1.5 overflow-x-auto no-scrollbar py-1">
+                            ${galleryPhotos.map((url, i) => `
+                                <div onclick="openPhotoDetail(${i})" class="w-12 h-12 flex-shrink-0 rounded-md overflow-hidden border-2 cursor-pointer transition ${i === activePhotoIndex ? 'border-blue-600 scale-105' : 'border-transparent opacity-60'}">
+                                    <img src="${url}" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/80x80/222222/ffffff?text=+${i+1}'">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-2.5 flex justify-between items-center text-xl text-neutral-800 border-t border-neutral-200 bg-white">
+                        <i class="fa-solid fa-arrow-up-from-bracket cursor-pointer hover:text-black active:scale-90 transition" onclick="showToast('📤 공유하기')"></i>
+                        <i class="fa-regular fa-heart cursor-pointer hover:text-black active:scale-90 transition" onclick="showToast('❤️ 즐겨찾기 추가됨')"></i>
+                        <i class="fa-solid fa-circle-info cursor-pointer hover:text-black active:scale-90 transition" onclick="showToast('ℹ️ 사진 정보')"></i>
+                        <i class="fa-solid fa-sliders cursor-pointer hover:text-black active:scale-90 transition" onclick="showToast('🎨 편집')"></i>
+                        <i class="fa-regular fa-trash-can cursor-pointer hover:text-red-500 active:scale-90 transition" onclick="showToast('🗑️ 삭제됨')"></i>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handlePhotoSwipe(e, currentIndex) {
+            if (!e.changedTouches || e.changedTouches.length === 0) return;
+            let endX = e.changedTouches[0].clientX;
+            let diff = photoTouchStartX - endX;
+            if (diff > 40) {
+                let nextIdx = currentIndex < galleryPhotos.length - 1 ? currentIndex + 1 : 0;
+                openPhotoDetail(nextIdx);
+            } else if (diff < -40) {
+                let prevIdx = currentIndex > 0 ? currentIndex - 1 : galleryPhotos.length - 1;
+                openPhotoDetail(prevIdx);
+            }
+        }
+
+        function handleMouseSwipe(e, currentIndex) {
+            let diff = photoMouseDownX - e.clientX;
+            if (diff > 40) {
+                let nextIdx = currentIndex < galleryPhotos.length - 1 ? currentIndex + 1 : 0;
+                openPhotoDetail(nextIdx);
+            } else if (diff < -40) {
+                let prevIdx = currentIndex > 0 ? currentIndex - 1 : galleryPhotos.length - 1;
+                openPhotoDetail(prevIdx);
+            }
+        }
+
+        /* ==============================================================
+           4. PHONE APP (권유리 교수님 오후 11:05, no subtext, no 이서정)
+        ============================================================== */
+        let phoneTab = 'recents';
+        let callActiveState = false;
+        let callDurationSec = 0;
+        let callTargetName = '';
+        let callStatusText = '연결 중...';
+        let currentKeypadInput = '';
+
+        function switchPhoneTab(tab) {
+            phoneTab = tab;
+            document.getElementById('app-window').innerHTML = renderPhoneApp();
+        }
+
+        function renderPhoneApp() {
+            let bodyContent = '';
+            if (phoneTab === 'recents') {
+                bodyContent = `
+                    <div class="px-4 pt-2 pb-24">
+                        <div class="bg-[#f0f2f5] p-4 rounded-3xl mb-4 relative shadow-2xs">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-8 h-8 rounded-full bg-[#0062ff] text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i class="fa-solid fa-phone text-xs"></i>
+                                </div>
+                                <div class="flex-1 pr-6">
+                                    <h3 class="text-[15px] font-bold text-neutral-900">알 수 없는 발신자 스크리닝</h3>
+                                    <p class="text-[12px] text-neutral-500 font-medium mt-1 leading-snug">전화벨이 울리기 전에 누가 전화를 걸었는지 묻습니다.</p>
+                                </div>
+                            </div>
+                            <button onclick="showToast('🛡️ 통화 스크리닝 활성화됨')" class="mt-3.5 w-full bg-[#0062ff] text-white font-bold text-[14px] py-3 rounded-2xl shadow-sm active:scale-98 transition">통화 스크리닝</button>
+                        </div>
+                        <div class="divide-y divide-neutral-100">
+                            <!-- Only '권유리 교수님' (오후 11:05) with NO subtext -->
+                            <div class="py-3 flex justify-between items-center cursor-pointer hover:bg-neutral-50 px-2 rounded-xl transition" onclick="startPhoneCall('권유리 교수님')">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-11 h-11 rounded-full bg-[#96d8e3] text-white flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-user"></i></div>
+                                    <div>
+                                        <p class="text-[15px] font-bold text-neutral-900">권유리 교수님</p>
+                                    </div>
+                                </div>
+                                <span class="text-[12px] text-neutral-400 font-medium">오후 11:05</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (phoneTab === 'keypad') {
+                bodyContent = `
+                    <div class="flex flex-col items-center justify-center px-4 pt-4 pb-24">
+                        <div class="text-3xl font-semibold tracking-wider h-12 mb-4 text-neutral-900 flex items-center justify-center">${currentKeypadInput || '&nbsp;'}</div>
+                        <div class="grid grid-cols-3 gap-x-6 gap-y-3.5 mb-6">
+                            ${['1','2','3','4','5','6','7','8','9','*','0','#'].map(num => `
+                                <button onclick="pressKeypad('${num}')" class="w-[72px] h-[72px] rounded-full bg-[#f4f4f6] active:bg-neutral-300 flex flex-col items-center justify-center text-neutral-900 shadow-xs mx-auto transition">
+                                    <span class="text-2xl font-normal leading-none">${num}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="flex justify-center items-center space-x-6">
+                            <div class="w-[72px]"></div>
+                            <button onclick="startPhoneCall('${currentKeypadInput || '알 수 없는 번호'}')" class="w-[72px] h-[72px] rounded-full bg-[#34c759] text-white flex items-center justify-center text-2xl shadow-md active:scale-95 transition">
+                                <i class="fa-solid fa-phone"></i>
+                            </button>
+                            <button onclick="currentKeypadInput = currentKeypadInput.slice(0, -1); switchPhoneTab('keypad');" class="w-[72px] flex items-center justify-center text-neutral-500 hover:text-black">
+                                <i class="fa-solid fa-delete-left text-2xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                bodyContent = `
+                    <div class="px-4 pt-2 pb-24">
+                        <h1 class="text-[28px] font-bold mb-3 tracking-tight">연락처</h1>
+                        <div class="divide-y divide-neutral-100">
+                            <div class="py-3 flex items-center space-x-3 cursor-pointer hover:bg-neutral-50 px-2 rounded-xl transition" onclick="startPhoneCall('권유리 교수님')">
+                                <div class="w-10 h-10 rounded-full bg-[#96d8e3] text-white flex items-center justify-center font-bold"><i class="fa-solid fa-user"></i></div>
+                                <div><p class="text-[15px] font-semibold text-neutral-900">권유리 교수님</p></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="flex flex-col h-full bg-white text-neutral-900 pt-11 select-none justify-between relative">
+                    <div class="px-4 py-2.5 bg-white flex justify-between items-center border-b border-neutral-100 flex-shrink-0">
+                        <span class="text-[15px] text-neutral-900 font-semibold cursor-pointer">편집</span>
+                        <h1 class="text-[17px] font-bold text-neutral-900">통화</h1>
+                        <div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800"><i class="fa-solid fa-bars text-sm"></i></div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto no-scrollbar">${bodyContent}</div>
+                    
+                    <!-- Bottom Bar: Contacts & Search completely disabled from touches -->
+                    <div class="absolute bottom-4 left-4 right-4 bg-[#f2f2f7]/90 backdrop-blur-xl border border-neutral-200/60 rounded-full px-4 py-2 flex justify-between items-center shadow-lg z-30">
+                        <button onclick="switchPhoneTab('recents')" class="flex flex-col items-center relative py-1 px-3 rounded-full ${phoneTab==='recents'?'bg-white shadow-xs text-neutral-900':'text-neutral-500'}">
+                            <i class="fa-solid fa-clock text-lg"></i><span class="text-[10px] font-bold mt-0.5">통화</span>
+                        </button>
+                        <div class="flex flex-col items-center py-1 px-3 rounded-full text-neutral-300 pointer-events-none opacity-40 cursor-not-allowed">
+                            <i class="fa-solid fa-user text-lg"></i><span class="text-[10px] font-bold mt-0.5">연락처</span>
+                        </div>
+                        <button onclick="switchPhoneTab('keypad')" class="flex flex-col items-center py-1 px-3 rounded-full ${phoneTab==='keypad'?'bg-white shadow-xs text-neutral-900':'text-neutral-500'}">
+                            <i class="fa-solid fa-grip text-lg text-blue-600"></i><span class="text-[10px] font-bold mt-0.5 text-blue-600">키패드</span>
+                        </button>
+                        <div class="flex flex-col items-center py-1 px-3 rounded-full text-neutral-300 pointer-events-none opacity-40 cursor-not-allowed">
+                            <i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[10px] font-bold mt-0.5">검색</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function pressKeypad(n) {
+            currentKeypadInput += n;
+            document.getElementById('app-window').innerHTML = renderPhoneApp();
+        }
+
+        let callDialogIndex = 0;
+        let callDialogText = '';
+
+        function startPhoneCall(targetName) {
+            callTargetName = targetName;
+            callActiveState = true;
+            callDurationSec = 0;
+            callStatusText = '연결 중...';
+            callDialogIndex = 0;
+            callDialogText = '';
+
+            setStatusBarTheme('light');
+            const appWindow = document.getElementById('app-window');
+            appWindow.innerHTML = renderActiveCallScreen();
+
+            setTimeout(() => {
+                if (!callActiveState) return;
+                callStatusText = '00:00';
+                appWindow.innerHTML = renderActiveCallScreen();
+                
+                window.callTimerInterval = setInterval(() => {
+                    callDurationSec++;
+                    let m = String(Math.floor(callDurationSec / 60)).padStart(2, '0');
+                    let s = String(callDurationSec % 60).padStart(2, '0');
+                    callStatusText = `${m}:${s}`;
+                    const timerEl = document.getElementById('call-timer-display');
+                    if (timerEl) timerEl.innerText = callStatusText;
+                }, 1000);
+
+                if (callTargetName === '권유리 교수님') {
+                    const dialogSteps = [
+                        { text: "여보세요", hold: 3000 },
+                        { text: "수영아?", hold: 3000 },
+                        { text: "너 많이 마셨구나.", hold: 4500 },
+                        { text: "몸도 약한 애가...", hold: 4500 },
+                        { text: "애들이랑 너무 많이 마시진 마.", hold: 4500 },
+                        { text: "왜 전화했어?", hold: 3000 },
+                        { text: "......", hold: 4000 },
+                        { text: "...데리러 갈게.", hold: 3000 },
+                        { text: "거기 가만히 있어.", hold: 3000, endCall: true }
+                    ];
+
+                    callDialogIndex = 0;
+                    function runNextDialogStep() {
+                        if (callDialogIndex < dialogSteps.length && callActiveState) {
+                            const step = dialogSteps[callDialogIndex];
+                            callDialogText = step.text;
+                            const subEl = document.getElementById('call-dialog-sub');
+                            if (subEl) subEl.innerText = callDialogText;
+                            
+                            if (step.endCall) {
+                                setTimeout(() => {
+                                    if (!callActiveState) return;
+                                    const endStatusEl = document.getElementById('call-end-status');
+                                    if (endStatusEl) {
+                                        endStatusEl.innerText = '통화종료';
+                                        endStatusEl.style.color = '#ffffff';
+                                    }
+                                    if (window.callTimerInterval) clearInterval(window.callTimerInterval);
+                                    setTimeout(() => {
+                                        if (callActiveState) endPhoneCall();
+                                    }, 2000);
+                                }, 1500);
+                                return;
+                            }
+
+                            callDialogIndex++;
+                            if (step.hold > 0) {
+                                window.callDialogTimeout = setTimeout(runNextDialogStep, step.hold);
+                            }
+                        }
+                    }
+                    window.callDialogTimeout = setTimeout(runNextDialogStep, 1000);
+                }
+            }, 1500);
+        }
+
+        function renderActiveCallScreen() {
+            return `
+                <div class="flex flex-col h-full bg-[#2c2c2e] text-white pt-12 pb-10 justify-between items-center select-none px-6">
+                    <div class="flex flex-col items-center mt-6 text-center">
+                        <p id="call-timer-display" class="text-neutral-400 text-base font-medium mb-1">${callStatusText}</p>
+                        <h2 class="text-3xl font-semibold tracking-tight">${callTargetName}</h2>
+                        <p id="call-dialog-sub" class="text-amber-300 text-lg font-bold mt-3 h-8 animate-pulse drop-shadow-md">${callDialogText}</p>
+                        <p id="call-end-status" class="text-white text-sm font-semibold mt-2 h-6"></p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-5 w-full max-w-[280px] mb-8">
+                        <button onclick="showToast('스피커 켜짐')" class="w-[75px] h-[75px] rounded-full bg-white/20 active:bg-white/40 flex flex-col items-center justify-center text-xl mx-auto shadow transition"><i class="fa-solid fa-volume-high text-xl mb-1"></i><span class="text-[11px] font-medium">스피커</span></button>
+                        <button onclick="showToast('FaceTime 전환')" class="w-[75px] h-[75px] rounded-full bg-white/20 active:bg-white/40 flex flex-col items-center justify-center text-xl mx-auto shadow transition"><i class="fa-solid fa-video text-xl mb-1"></i><span class="text-[11px] font-medium">FaceTime</span></button>
+                        <button onclick="showToast('음소거 됨')" class="w-[75px] h-[75px] rounded-full bg-white/20 active:bg-white/40 flex flex-col items-center justify-center text-xl mx-auto shadow transition"><i class="fa-solid fa-microphone-slash text-xl mb-1"></i><span class="text-[11px] font-medium">소리 끔</span></button>
+                        <button onclick="showToast('통화 추가')" class="w-[75px] h-[75px] rounded-full bg-white/20 active:bg-white/40 flex flex-col items-center justify-center text-xl mx-auto shadow transition"><i class="fa-solid fa-ellipsis text-xl mb-1"></i><span class="text-[11px] font-medium">더 보기</span></button>
+                        <button onclick="endPhoneCall()" class="w-[75px] h-[75px] rounded-full bg-red-600 hover:bg-red-700 active:scale-95 flex flex-col items-center justify-center text-2xl mx-auto shadow-xl transition"><i class="fa-solid fa-phone-slash text-2xl mb-1"></i><span class="text-[11px] font-medium">종료</span></button>
+                        <button onclick="showToast('키패드')" class="w-[75px] h-[75px] rounded-full bg-white/20 active:bg-white/40 flex flex-col items-center justify-center text-xl mx-auto shadow transition"><i class="fa-solid fa-grip text-xl mb-1"></i><span class="text-[11px] font-medium">키패드</span></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function endPhoneCall() {
+            callActiveState = false;
+            if (window.callTimerInterval) clearInterval(window.callTimerInterval);
+            if (window.callDialogTimeout) clearTimeout(window.callDialogTimeout);
+            openApp('phone');
+        }
+
+        /* ==============================================================
+           5. SAFARI APP (Search history list)
+        ============================================================== */
+        let safariSearchHistory = [
+            { title: "내일 날씨", sub: null, badge: null, chevron: false },
+            { title: "이혼 소송 기간", sub: null, badge: null, chevron: false },
+            { title: "이혼 귀책사유", sub: null, badge: null, chevron: false },
+            { title: "이혼 소송 절차", sub: null, badge: null, chevron: false },
+            { title: "윤영선 부조리극", sub: null, badge: null, chevron: false },
+            { title: "키스 연극", sub: null, badge: null, chevron: false },
+            { title: "7살 나이차이", sub: null, badge: null, chevron: false },
+            { title: "연기 포럼", sub: null, badge: null, chevron: false },
+            { title: "권유리 배우", sub: null, badge: null, chevron: false },
+            { title: "권유리", sub: null, badge: null, chevron: false },
+            { title: "이미경", sub: null, badge: null, chevron: false },
+            { title: "중희대 로그인 안됨", sub: null, badge: null, chevron: false },
+            { title: "중희대학교 누리", sub: null, badge: null, chevron: false }
+        ];
+
+        function removeSafariHistoryItem(index, event) {
+            if (event) event.stopPropagation();
+            safariSearchHistory.splice(index, 1);
+            document.getElementById('app-window').innerHTML = renderSafariApp();
+        }
+
+        function addSafariSearchQuery() {
+            const inputEl = document.getElementById('safari-top-input');
+            if (!inputEl || !inputEl.value.trim()) return;
+            safariSearchHistory.unshift({
+                title: inputEl.value.trim(),
+                sub: null,
+                badge: null,
+                chevron: false
+            });
+            document.getElementById('app-window').innerHTML = renderSafariApp();
+        }
+
+        function renderSafariApp() {
+            return `
+                <div class="flex flex-col h-full bg-white text-neutral-900 pt-11 justify-between select-none relative">
+                    <div class="px-5 py-3 bg-white border-b border-neutral-200 flex items-center justify-between space-x-3 flex-shrink-0">
+                        <i class="fa-solid fa-plus text-xl text-neutral-800 cursor-pointer" onclick="showToast('새 탭')"></i>
+                        <input id="safari-top-input" type="text" placeholder="Google에 물어보세요" class="flex-1 bg-transparent text-[16px] text-neutral-900 placeholder-neutral-400 font-normal focus:outline-none" onkeypress="if(event.key==='Enter') addSafariSearchQuery()">
+                        <div class="flex items-center space-x-4 text-neutral-800">
+                            <i class="fa-solid fa-microphone text-[18px] cursor-pointer" onclick="showToast('🎤 음성 검색')"></i>
+                            <i class="fa-solid fa-camera text-[18px] cursor-pointer" onclick="showToast('📷 Google 렌즈')"></i>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto no-scrollbar px-5 py-1">
+                        ${safariSearchHistory.map((item, idx) => `
+                            <div class="py-3 flex items-center justify-between cursor-pointer hover:bg-neutral-50 rounded-lg transition" onclick="showToast('🔍 ' + '${item.title}')">
+                                <div class="flex items-center space-x-4 min-w-0 flex-1 pr-2">
+                                    <i class="fa-regular fa-clock text-neutral-400 text-[18px] flex-shrink-0"></i>
+                                    <div class="flex flex-col min-w-0">
+                                        <span class="text-[16px] font-semibold text-neutral-900 truncate leading-snug">${item.title}</span>
+                                        ${item.sub ? `<span class="text-[12px] text-neutral-400 font-medium leading-tight mt-0.5">${item.sub}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3 flex-shrink-0">
+                                    ${item.badge === 'imgur' ? `<span class="bg-[#1b1e24] text-white text-[11px] font-black px-1.5 py-0.5 rounded tracking-tight">imgur</span>` : ''}
+                                    ${item.chevron 
+                                        ? `<i class="fa-solid fa-chevron-down text-neutral-500 text-xs px-1"></i>` 
+                                        : `<button type="button" onclick="removeSafariHistoryItem(${idx}, event)" class="text-neutral-500 hover:text-neutral-800 p-1"><i class="fa-solid fa-xmark text-[15px]"></i></button>`
+                                    }
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="px-5 py-3 bg-white flex items-center justify-between space-x-3 flex-shrink-0 border-t border-neutral-100">
+                        <button type="button" onclick="goHome()" class="w-12 h-12 rounded-full bg-white border border-neutral-200/80 shadow-md flex items-center justify-center text-neutral-800 hover:bg-neutral-50 active:scale-95 transition">
+                            <i class="fa-solid fa-chevron-left text-lg"></i>
+                        </button>
+
+                        <div class="flex-1 h-12 bg-white border border-neutral-200/80 shadow-md rounded-full px-5 flex items-center justify-between cursor-pointer hover:bg-neutral-50 transition" onclick="showToast('🔍 담배 기침 안하고 피는 검색 결과')">
+                            <i class="fa-solid fa-bars text-neutral-800 text-base"></i>
+                            <div class="flex items-center space-x-1.5 whitespace-nowrap">
+                                <i class="fa-solid fa-magnifying-glass text-neutral-800 text-xs"></i>
+                                <span class="text-[14px] font-bold text-neutral-900">담배 기침 안하고 피는</span>
+                            </div>
+                            <i class="fa-solid fa-microphone text-neutral-800 text-base"></i>
+                        </div>
+
+                        <button type="button" onclick="showToast('탭 목록 열림')" class="w-12 h-12 rounded-full bg-white border border-neutral-200/80 shadow-md flex items-center justify-center text-neutral-800 hover:bg-neutral-50 active:scale-95 transition">
+                            <i class="fa-regular fa-clone text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ==============================================================
+           6. INSTAGRAM APP (Only '내 스토리' remains in story bar)
+        ============================================================== */
+        let instaSlideIndex = 0;
+        const instaPost1Images = [
+            "https://i.imgur.com/dTQGeje.jpeg",
+            "https://i.imgur.com/ux68hZk.jpeg"
+        ];
+        let instaTouchStartX = 0;
+        let instaMouseDownX = 0;
+        let isInstaDragging = false;
+
+        let instaSlide2Index = 0;
+        const instaPost2Images = [
+            "https://i.imgur.com/5cZCS0l.jpeg",
+            "https://i.imgur.com/tM1lmBW.jpeg"
+        ];
+        let insta2TouchStartX = 0;
+        let insta2MouseDownX = 0;
+        let isInsta2Dragging = false;
+
+        function setInstaSlide(idx) {
+            instaSlideIndex = idx;
+            const track = document.getElementById('insta-carousel-track');
+            const badge = document.getElementById('insta-slide-badge');
+            const dot0 = document.getElementById('insta-dot-0');
+            const dot1 = document.getElementById('insta-dot-1');
+            const prevBtn = document.getElementById('insta-prev-btn');
+            const nextBtn = document.getElementById('insta-next-btn');
+
+            if (track) track.style.transform = `translateX(-${instaSlideIndex * 100}%)`;
+            if (badge) badge.innerText = `${instaSlideIndex + 1}/2`;
+            if (dot0 && dot1) {
+                dot0.className = instaSlideIndex === 0
+                    ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7] transition-all cursor-pointer'
+                    : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db] transition-all cursor-pointer';
+                dot1.className = instaSlideIndex === 1
+                    ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7] transition-all cursor-pointer'
+                    : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db] transition-all cursor-pointer';
+            }
+            if (prevBtn) prevBtn.style.display = instaSlideIndex === 0 ? 'none' : 'flex';
+            if (nextBtn) nextBtn.style.display = instaSlideIndex === 1 ? 'none' : 'flex';
+        }
+
+        function handleInstaTouchEnd(e) {
+            if (!e.changedTouches || e.changedTouches.length === 0) return;
+            let diff = instaTouchStartX - e.changedTouches[0].clientX;
+            if (diff > 35 && instaSlideIndex < 1) setInstaSlide(1);
+            else if (diff < -35 && instaSlideIndex > 0) setInstaSlide(0);
+        }
+
+        function handleInstaMouseUp(e) {
+            if (!isInstaDragging) return;
+            isInstaDragging = false;
+            let diff = instaMouseDownX - e.clientX;
+            if (diff > 35 && instaSlideIndex < 1) setInstaSlide(1);
+            else if (diff < -35 && instaSlideIndex > 0) setInstaSlide(0);
+        }
+
+        function setInstaSlide2(idx) {
+            instaSlide2Index = idx;
+            const track = document.getElementById('insta-carousel-track-2');
+            const badge = document.getElementById('insta-slide-badge-2');
+            const dot0 = document.getElementById('insta2-dot-0');
+            const dot1 = document.getElementById('insta2-dot-1');
+            const prevBtn = document.getElementById('insta2-prev-btn');
+            const nextBtn = document.getElementById('insta2-next-btn');
+
+            if (track) track.style.transform = `translateX(-${instaSlide2Index * 100}%)`;
+            if (badge) badge.innerText = `${instaSlide2Index + 1}/2`;
+            if (dot0 && dot1) {
+                dot0.className = instaSlide2Index === 0
+                    ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7] transition-all cursor-pointer'
+                    : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db] transition-all cursor-pointer';
+                dot1.className = instaSlide2Index === 1
+                    ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7] transition-all cursor-pointer'
+                    : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db] transition-all cursor-pointer';
+            }
+            if (prevBtn) prevBtn.style.display = instaSlide2Index === 0 ? 'none' : 'flex';
+            if (nextBtn) nextBtn.style.display = instaSlide2Index === 1 ? 'none' : 'flex';
+        }
+
+        function handleInsta2TouchEnd(e) {
+            if (!e.changedTouches || e.changedTouches.length === 0) return;
+            let diff = insta2TouchStartX - e.changedTouches[0].clientX;
+            if (diff > 35 && instaSlide2Index < 1) setInstaSlide2(1);
+            else if (diff < -35 && instaSlide2Index > 0) setInstaSlide2(0);
+        }
+
+        function handleInsta2MouseUp(e) {
+            if (!isInsta2Dragging) return;
+            isInsta2Dragging = false;
+            let diff = insta2MouseDownX - e.clientX;
+            if (diff > 35 && instaSlide2Index < 1) setInstaSlide2(1);
+            else if (diff < -35 && instaSlide2Index > 0) setInstaSlide2(0);
+        }
+
+        function renderInstagramApp() {
+            return `
+                <div class="flex flex-col h-full bg-white text-neutral-900 pt-11 pb-5 justify-between select-none">
+                    <div class="px-4 py-2.5 flex justify-between items-center bg-white flex-shrink-0">
+                        <i class="fa-solid fa-plus text-2xl text-neutral-900 cursor-pointer" onclick="showToast('새 게시물 만들기')"></i>
+                        <div class="flex items-center space-x-1 cursor-pointer" onclick="showToast('피드 전환')">
+                            <span class="text-[22px] font-extrabold tracking-tight font-sans">Instagram</span>
+                            <i class="fa-solid fa-chevron-down text-xs mt-1"></i>
+                        </div>
+                        <div class="flex items-center space-x-5 text-2xl text-neutral-900">
+                            <i class="fa-regular fa-square-plus text-xl cursor-pointer" onclick="showToast('릴스')"></i>
+                            <i class="fa-regular fa-heart cursor-pointer" onclick="showToast('알림')"></i>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto no-scrollbar divide-y divide-neutral-100">
+                        <!-- Stories Row: Only '내 스토리' remains as requested -->
+                        <div class="px-3 py-2.5 flex space-x-3.5 overflow-x-auto no-scrollbar bg-white">
+                            <div class="flex flex-col items-center space-y-1 flex-shrink-0 cursor-pointer" onclick="showToast('내 스토리 추가')">
+                                <div class="relative w-[72px] h-[72px] rounded-full p-[2px] border border-neutral-200">
+                                    <img src="https://i.imgur.com/rA3CiSJ.jpeg" class="w-full h-full rounded-full object-cover" onerror="this.src='https://placehold.co/100x100/333333/ffffff?text=Me'">
+                                    <div class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-neutral-900 text-white border-2 border-white flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </div>
+                                </div>
+                                <span class="text-[11px] text-neutral-600 font-medium">내 스토리</span>
+                            </div>
+                        </div>
+
+                        <!-- Post 1: sssssssooyoung -->
+                        <div class="pb-3 bg-white">
+                            <div class="px-3 py-2.5 flex justify-between items-center">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-8 h-8 rounded-full overflow-hidden border border-neutral-200">
+                                        <img src="https://i.imgur.com/rA3CiSJ.jpeg" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/80x80/333333/ffffff?text=User'">
+                                    </div>
+                                    <span class="text-[13.5px] font-bold text-neutral-900">sssssssooyoung</span>
+                                </div>
+                                <i class="fa-solid fa-bars text-neutral-700 cursor-pointer"></i>
+                            </div>
+
+                            <!-- Carousel Container 1 -->
+                            <div class="relative w-full aspect-[4/5] bg-neutral-100 overflow-hidden cursor-grab active:cursor-grabbing"
+                                 ontouchstart="instaTouchStartX = event.touches[0].clientX"
+                                 ontouchend="handleInstaTouchEnd(event)"
+                                 onmousedown="instaMouseDownX = event.clientX; isInstaDragging = true;"
+                                 onmouseup="handleInstaMouseUp(event)"
+                                 onmouseleave="isInstaDragging = false;">
+                                
+                                <div id="insta-carousel-track" class="flex w-full h-full transition-transform duration-300 ease-out" style="transform: translateX(-${instaSlideIndex * 100}%);">
+                                    <img src="${instaPost1Images[0]}" class="w-full h-full object-cover flex-shrink-0 pointer-events-none" onerror="this.src='https://placehold.co/500x600/222222/ffffff?text=Post+1'">
+                                    <img src="${instaPost1Images[1]}" class="w-full h-full object-cover flex-shrink-0 pointer-events-none" onerror="this.src='https://placehold.co/500x600/333333/ffffff?text=Post+2'">
+                                </div>
+
+                                <div id="insta-slide-badge" class="absolute top-3 right-3 bg-neutral-900/75 text-white text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-xs pointer-events-none">
+                                    ${instaSlideIndex + 1}/2
+                                </div>
+
+                                <button type="button" onclick="event.stopPropagation(); showToast('🔇 오디오 음소거됨')" class="absolute bottom-3 right-3 w-7 h-7 rounded-full bg-neutral-900/70 text-white flex items-center justify-center backdrop-blur-xs">
+                                    <i class="fa-solid fa-volume-xmark text-[11px]"></i>
+                                </button>
+
+                                <button id="insta-prev-btn" type="button" onclick="event.stopPropagation(); setInstaSlide(0)" style="display: ${instaSlideIndex === 0 ? 'none' : 'flex'};" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 items-center justify-center shadow-md transition">
+                                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                                </button>
+                                <button id="insta-next-btn" type="button" onclick="event.stopPropagation(); setInstaSlide(1)" style="display: ${instaSlideIndex === 1 ? 'none' : 'flex'};" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 items-center justify-center shadow-md transition">
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+
+                            <div class="px-3 pt-2.5">
+                                <div class="w-full flex justify-center items-center space-x-1.5 mb-2">
+                                    <div id="insta-dot-0" onclick="setInstaSlide(0)" class="${instaSlideIndex === 0 ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7]' : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db]'} transition-all cursor-pointer"></div>
+                                    <div id="insta-dot-1" onclick="setInstaSlide(1)" class="${instaSlideIndex === 1 ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7]' : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db]'} transition-all cursor-pointer"></div>
+                                </div>
+
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="flex items-center space-x-4">
+                                        <button class="flex items-center space-x-1.5" onclick="showToast('❤️ 좋아요 311')"><i class="fa-regular fa-heart text-[22px]"></i><span class="text-[13.5px] font-bold">311</span></button>
+                                        <button class="flex items-center space-x-1.5" onclick="showToast('💬 댓글 5개')"><i class="fa-regular fa-comment text-[22px]"></i><span class="text-[13.5px] font-bold">5</span></button>
+                                        <button class="flex items-center" onclick="showToast('🔁 리포스트')"><i class="fa-solid fa-retweet text-[21px]"></i></button>
+                                        <button class="flex items-center space-x-1.5" onclick="showToast('✈️ 공유 15회')"><i class="fa-regular fa-paper-plane text-[21px]"></i><span class="text-[13.5px] font-bold">15</span></button>
+                                    </div>
+                                    <i class="fa-regular fa-bookmark text-[21px] cursor-pointer" onclick="showToast('🔖 저장됨')"></i>
+                                </div>
+
+                                <div class="flex items-center space-x-1.5 mt-1">
+                                    <img src="https://i.imgur.com/rA3CiSJ.jpeg" class="w-4 h-4 rounded-full border border-neutral-200 object-cover" onerror="this.src='https://placehold.co/30x30/222/fff'">
+                                    <p class="text-[13px] text-neutral-900">여러 명이 좋아합니다</p>
+                                </div>
+                                <p class="text-[13px] text-neutral-900 mt-1"><span class="font-bold mr-1.5">sssssssooyoung</span>종강이다아</p>
+                            </div>
+                        </div>
+
+                        <!-- Post 2: k.wonyuri -->
+                        <div class="pb-3 bg-white">
+                            <div class="px-3 py-2.5 flex justify-between items-center">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-8 h-8 rounded-full overflow-hidden border border-neutral-200">
+                                        <img src="https://i.imgur.com/SavG3Ll.jpeg" class="w-full h-full object-cover">
+                                    </div>
+                                    <span class="text-[13.5px] font-bold text-neutral-900">k.wonyuri</span>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <button onclick="showToast('팔로우 요청됨')" class="bg-[#f0f2f5] text-neutral-900 text-xs font-bold px-3.5 py-1.5 rounded-lg active:scale-95 transition">팔로우</button>
+                                    <i class="fa-solid fa-bars text-neutral-700 cursor-pointer"></i>
+                                </div>
+                            </div>
+
+                            <!-- Carousel Container 2 -->
+                            <div class="relative w-full aspect-[4/5] bg-neutral-100 overflow-hidden cursor-grab active:cursor-grabbing"
+                                 ontouchstart="insta2TouchStartX = event.touches[0].clientX"
+                                 ontouchend="handleInsta2TouchEnd(event)"
+                                 onmousedown="insta2MouseDownX = event.clientX; isInsta2Dragging = true;"
+                                 onmouseup="handleInsta2MouseUp(event)"
+                                 onmouseleave="isInsta2Dragging = false;">
+                                
+                                <div id="insta-carousel-track-2" class="flex w-full h-full transition-transform duration-300 ease-out" style="transform: translateX(-${instaSlide2Index * 100}%);">
+                                    <img src="${instaPost2Images[0]}" class="w-full h-full object-cover flex-shrink-0 pointer-events-none" onerror="this.src='https://placehold.co/500x600/333/fff'">
+                                    <img src="${instaPost2Images[1]}" class="w-full h-full object-cover flex-shrink-0 pointer-events-none" onerror="this.src='https://placehold.co/500x600/444/fff'">
+                                </div>
+
+                                <div id="insta-slide-badge-2" class="absolute top-3 right-3 bg-neutral-900/75 text-white text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-xs pointer-events-none">
+                                    ${instaSlide2Index + 1}/2
+                                </div>
+
+                                <button id="insta2-prev-btn" type="button" onclick="event.stopPropagation(); setInstaSlide2(0)" style="display: ${instaSlide2Index === 0 ? 'none' : 'flex'};" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 items-center justify-center shadow-md transition">
+                                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                                </button>
+                                <button id="insta2-next-btn" type="button" onclick="event.stopPropagation(); setInstaSlide2(1)" style="display: ${instaSlide2Index === 1 ? 'none' : 'flex'};" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 items-center justify-center shadow-md transition">
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+
+                            <div class="px-3 pt-2.5">
+                                <div class="w-full flex justify-center items-center space-x-1.5 mb-2">
+                                    <div id="insta2-dot-0" onclick="setInstaSlide2(0)" class="${instaSlide2Index === 0 ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7]' : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db]'} transition-all cursor-pointer"></div>
+                                    <div id="insta2-dot-1" onclick="setInstaSlide2(1)" class="${instaSlide2Index === 1 ? 'w-[6.5px] h-[6.5px] rounded-full bg-[#4150f7]' : 'w-[6px] h-[6px] rounded-full bg-[#d4d6db]'} transition-all cursor-pointer"></div>
+                                </div>
+
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="flex items-center space-x-4">
+                                        <button class="flex items-center space-x-1.5" onclick="showToast('❤️ 좋아요 46')"><i class="fa-regular fa-heart text-[22px]"></i><span class="text-[13px] font-bold">46</span></button>
+                                        <button class="flex items-center space-x-1.5" onclick="showToast('💬 댓글 2')"><i class="fa-regular fa-comment text-[22px]"></i><span class="text-[13px] font-bold">2</span></button>
+                                        <button class="flex items-center space-x-1.5" onclick="showToast('🔁 리포스트 5')"><i class="fa-solid fa-retweet text-[21px]"></i><span class="text-[13px] font-bold">5</span></button>
+                                        <button class="flex items-center space-x-1.5" onclick="showToast('✈️ 공유 1')"><i class="fa-regular fa-paper-plane text-[21px]"></i><span class="text-[13px] font-bold">1</span></button>
+                                    </div>
+                                    <i class="fa-regular fa-bookmark text-[21px] cursor-pointer" onclick="showToast('🔖 저장됨')"></i>
+                                </div>
+
+                                <div class="flex items-center space-x-1.5 mt-1">
+                                    <img src="https://i.imgur.com/rA3CiSJ.jpeg" class="w-4 h-4 rounded-full border border-neutral-200 object-cover" onerror="this.src='https://placehold.co/30x30/222/fff'">
+                                    <p class="text-[13px] text-neutral-900"><span class="font-bold">sssssssooyoung</span>님 외 <span class="font-bold">여러 명</span>이 좋아합니다</p>
+                                </div>
+                                <p class="text-[13px] text-neutral-900 mt-1"><span class="font-bold mr-1.5">k.wonyuri</span>산책</p>
+                                <p class="text-[11px] text-neutral-400 mt-1">2일 전</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Nav -->
+                    <div class="h-[50px] bg-white border-t border-neutral-200 flex justify-around items-center px-2 flex-shrink-0 text-2xl text-neutral-900">
+                        <i class="fa-solid fa-house cursor-pointer" onclick="goHome()"></i>
+                        <i class="fa-regular fa-circle-play cursor-pointer" onclick="showToast('릴스')"></i>
+                        <i class="fa-regular fa-paper-plane cursor-pointer" onclick="showToast('DM 메시지')"></i>
+                        <i class="fa-solid fa-magnifying-glass cursor-pointer" onclick="showToast('검색')"></i>
+                        <div class="w-7 h-7 rounded-full overflow-hidden border border-neutral-300 relative cursor-pointer" onclick="showToast('프로필')">
+                            <img src="https://i.imgur.com/rA3CiSJ.jpeg" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/60x60/333/fff'">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
